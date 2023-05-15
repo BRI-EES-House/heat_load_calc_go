@@ -1,8 +1,6 @@
 package main
 
 import (
-	"errors"
-
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -35,7 +33,7 @@ type Rooms struct {
 	met_is            []float64  // 室iの在室者のMet値, [i, 1]
 }
 
-func NewRooms(ds []interface{}) (*Rooms, error) {
+func NewRooms(ds []RoomJson) (*Rooms, error) {
 	n_rm := len(ds)
 	rms := make([]Room, n_rm)
 	id_rm_is := make([]int, n_rm)
@@ -51,7 +49,7 @@ func NewRooms(ds []interface{}) (*Rooms, error) {
 	met_is := make([]float64, n_rm)
 
 	for i, d := range ds {
-		rm, err := _get_rm(d.(map[string]interface{}))
+		rm, err := _get_rm(d)
 		if err != nil {
 			return nil, err
 		}
@@ -86,14 +84,11 @@ func NewRooms(ds []interface{}) (*Rooms, error) {
 	}, nil
 }
 
-func _get_rm(d map[string]interface{}) (Room, error) {
-	v_rm_i, ok := d["volume"].(float64)
-	if !ok {
-		return Room{}, errors.New("invalid volume type")
-	}
+func _get_rm(d RoomJson) (Room, error) {
+	v_rm_i := d.Volume
 
 	c_lh_frt, c_sh_frt, g_lh_frt, g_sh_frt, err := get_furniture_specs(
-		d["furniture"].(map[string]interface{}),
+		&d.Furniture,
 		v_rm_i,
 	)
 	if err != nil {
@@ -102,15 +97,15 @@ func _get_rm(d map[string]interface{}) (Room, error) {
 
 	// v_vent_ntr_set については m3/h から m3/s の単位変換を行う。
 	return Room{
-		id:             int(d["id"].(float64)),
-		name:           d["name"].(string),
-		sub_name:       d["sub_name"].(string),
-		a_f:            d["floor_area"].(float64),
+		id:             d.Id,
+		name:           d.Name,
+		sub_name:       d.SubName,
+		a_f:            d.FloorArea,
 		v:              v_rm_i,
 		c_sh_frt:       c_sh_frt,
 		g_sh_frt:       g_sh_frt,
 		c_lh_frt:       c_lh_frt,
 		g_lh_frt:       g_lh_frt,
-		v_vent_ntr_set: d["ventilation"].(map[string]interface{})["natural"].(float64) / 3600.0,
+		v_vent_ntr_set: d.Ventilation.Natural / 3600.0,
 	}, nil
 }

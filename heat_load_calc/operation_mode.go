@@ -28,7 +28,7 @@ const (
 
 type Operation struct {
 	_ac_method          ACMethod
-	_ac_config          []interface{}
+	_ac_config          []ACConfigJson
 	_lower_target_is_ns *ScheduleData
 	_upper_target_is_ns *ScheduleData
 	_ac_demand_is_ns    *ScheduleData
@@ -37,7 +37,7 @@ type Operation struct {
 
 func NewOperation(
 	ac_method ACMethod,
-	ac_config []interface{},
+	ac_config []ACConfigJson,
 	lower_target_is_ns *ScheduleData,
 	upper_target_is_ns *ScheduleData,
 	ac_demand_is_ns *ScheduleData,
@@ -54,42 +54,42 @@ func NewOperation(
 }
 
 func make_operation(
-	d map[string]interface{},
+	d *CommonJson,
 	ac_setting_is_ns *ScheduleData,
 	ac_demand_is_ns *ScheduleData,
 	n_rm int,
 ) *Operation {
-	ac_method := ACMethod(d["ac_method"].(string))
+	ac_method := ACMethod(d.AcMethod)
 
-	var ac_config []interface{}
-	if _, ok := d["ac_config"]; ok {
-		ac_config = d["ac_config"].([]interface{})
+	var ac_config []ACConfigJson
+	if d.AcConfig != nil {
+		ac_config = d.AcConfig
 	} else {
 		switch ac_method {
 		case AIR_TEMPERATURE, SIMPLE, OT:
-			ac_config = []interface{}{
-				map[string]interface{}{
-					"mode":  1,
-					"lower": 20.0,
-					"upper": 27.0,
+			ac_config = []ACConfigJson{
+				ACConfigJson{
+					Mode:  1,
+					Lower: 20.0,
+					Upper: 27.0,
 				},
-				map[string]interface{}{
-					"mode":  2,
-					"lower": 20.0,
-					"upper": 27.0,
+				ACConfigJson{
+					Mode:  2,
+					Lower: 20.0,
+					Upper: 27.0,
 				},
 			}
 		case PMV:
-			ac_config = []interface{}{
-				map[string]interface{}{
-					"mode":  1,
-					"lower": -0.5,
-					"upper": 0.5,
+			ac_config = []ACConfigJson{
+				ACConfigJson{
+					Mode:  1,
+					Lower: -0.5,
+					Upper: 0.5,
 				},
-				map[string]interface{}{
-					"mode":  2,
-					"lower": -0.5,
-					"upper": 0.5,
+				ACConfigJson{
+					Mode:  2,
+					Lower: -0.5,
+					Upper: 0.5,
 				},
 			}
 		default:
@@ -118,10 +118,9 @@ func make_operation(
 	}
 
 	for _, conf := range ac_config {
-		conf := conf.(map[string]interface{})
-		mode := to_int(conf["mode"])
-		lower := conf["lower"].(float64)
-		upper := conf["upper"].(float64)
+		mode := to_int(conf.Mode)
+		lower := conf.Lower
+		upper := conf.Upper
 
 		off := 0
 		for j := 0; j < c; j++ {
@@ -160,22 +159,22 @@ func (o *Operation) ac_method() ACMethod {
 	return o._ac_method
 }
 
-func (o *Operation) ac_config() []interface{} {
+func (o *Operation) ac_config() []ACConfigJson {
 	return o._ac_config
 }
 
 /*
-	運転モードを決定する。
+		運転モードを決定する。
 
-    Args:
-        ac_demand_is_n: ステップnにおける室iの空調需要の有無, 0.0~1.0, [i, 1]
-        operation_mode_is_n_mns: ステップn-1における室iの運転状態, [i, 1]
-        pmv_heavy_is_n: ステップnにおける室iの厚着時のPMV, [i, 1]
-        pmv_middle_is_n: ステップnにおける室iの中間着時のPMV, [i, 1]
-        pmv_light_is_n: ステップnにおける室iの薄着時のPMV, [i, 1]
+	    Args:
+	        ac_demand_is_n: ステップnにおける室iの空調需要の有無, 0.0~1.0, [i, 1]
+	        operation_mode_is_n_mns: ステップn-1における室iの運転状態, [i, 1]
+	        pmv_heavy_is_n: ステップnにおける室iの厚着時のPMV, [i, 1]
+	        pmv_middle_is_n: ステップnにおける室iの中間着時のPMV, [i, 1]
+	        pmv_light_is_n: ステップnにおける室iの薄着時のPMV, [i, 1]
 
-    Returns:
-        ステップnの室iにおける運転状態, [i, 1]
+	    Returns:
+	        ステップnの室iにおける運転状態, [i, 1]
 */
 func (self *Operation) get_operation_mode_is_n(
 	n int,
@@ -307,6 +306,7 @@ func (self *Operation) get_theta_target_is_n(
 
 /*
 Returns:
+
 	ステップ n における室 i の人体表面の対流熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 	ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 */
@@ -415,15 +415,15 @@ func _get_theta_target(
 }
 
 /*
-	在室者周りの風速を求める。
+		在室者周りの風速を求める。
 
-    Args:
-        operation_mode_is:
-        is_radiative_cooling_is:
-        is_radiative_heating_is:
+	    Args:
+	        operation_mode_is:
+	        is_radiative_cooling_is:
+	        is_radiative_heating_is:
 
-    Returns:
-        ステップnにおける室iの在室者周りの風速, m/s, [i, 1]
+	    Returns:
+	        ステップnにおける室iの在室者周りの風速, m/s, [i, 1]
 */
 func get_v_hum_is_n(
 	operation_mode_is []OperationMode,
@@ -466,13 +466,15 @@ func get_v_hum_is_n(
 }
 
 /*
-	運転モードに応じた在室者のClo値を決定する。
+運転モードに応じた在室者のClo値を決定する。
 
-	Args
-		operation_mode_is_n ステップnにおける室iの運転状態, [i, 1]
+Args
 
-	Returns
-		ステップnにおける室iの在室者のClo値, [i, 1]
+	operation_mode_is_n ステップnにおける室iの運転状態, [i, 1]
+
+Returns
+
+	ステップnにおける室iの在室者のClo値, [i, 1]
 */
 func get_clo_is_ns(operation_mode_is_n []OperationMode) []float64 {
 
@@ -612,15 +614,15 @@ func _get_operation_mode_pmv_is_n(
 /*
 運転モードを決定する。
 
-    Args:
-        ac_demand_i_n: ステップnにおける室iの空調需要の有無, 0.0～1.0
-        operation_mode_i_n_mns: ステップn-1における室iの運転状態
-        pmv_heavy_i_n: ステップnにおける室iの厚着時のPMV
-        pmv_middle_i_n: ステップnにおける室iの中間着時のPMV
-        pmv_light_i_n: ステップnにおける室iの薄着時のPMV
+	Args:
+	    ac_demand_i_n: ステップnにおける室iの空調需要の有無, 0.0～1.0
+	    operation_mode_i_n_mns: ステップn-1における室iの運転状態
+	    pmv_heavy_i_n: ステップnにおける室iの厚着時のPMV
+	    pmv_middle_i_n: ステップnにおける室iの中間着時のPMV
+	    pmv_light_i_n: ステップnにおける室iの薄着時のPMV
 
-    Returns:
-        ステップnにおける室iの運転状態
+	Returns:
+	    ステップnにおける室iの運転状態
 */
 func get_operation_mode_i_n(
 	ac_demand_i_n float64,

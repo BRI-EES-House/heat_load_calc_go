@@ -138,12 +138,14 @@ type Boundaries struct {
 }
 
 /*
-
 Args
+
 	id_rm_is 室のID, [i, 1]
 	bs_list 境界に関する辞書
 	w Weather クラス
+
 Notes
+
 	本来であれば Boundaries クラスにおいて境界に関する入力用辞書から読み込みを境界個別に行う。
 	しかし、室内側表面放射熱伝達は室内側の形態係数によって値が決まり、ある室に接する境界の面積の組み合わせで決定されるため、
 	境界個別に値を決めることはできない。（すべての境界の情報が必要である。）
@@ -152,18 +154,18 @@ Notes
 	Boundary クラスを生成する前に、予め室内側表面放射・対流熱伝達率を計算しておき、
 	Boundary クラスを生成する時に必要な情報としておく。
 */
-func NewBoundaries(id_rm_is []int, bs_list []interface{}, w *Weather) *Boundaries {
+func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundaries {
 
 	_areas := mat.NewVecDense(len(bs_list), nil)
 	_connected_room_ids := make([]int, len(bs_list))
 	h_c_js := make([]float64, len(bs_list))
 	for j := 0; j < len(bs_list); j++ {
-		b := bs_list[j].(map[string]interface{})
-		_areas.SetVec(j, b["area"].(float64))
-		_connected_room_ids[j] = int(b["connected_room_id"].(float64))
+		b := bs_list[j]
+		_areas.SetVec(j, b.Area)
+		_connected_room_ids[j] = int(b.ConnectedRoomId)
 
 		// 境界jの室内側表面対流熱伝達率, W/m2K, [J, 1]
-		h_c_js[j] = b["h_c"].(float64)
+		h_c_js[j] = b.H_c
 	}
 
 	// 境界jの室内側表面放射熱伝達率, W/m2K, [J, 1]
@@ -175,7 +177,7 @@ func NewBoundaries(id_rm_is []int, bs_list []interface{}, w *Weather) *Boundarie
 	// 境界 j, [J]
 	bss := make([]*Boundary, len(bs_list))
 	for j := 0; j < len(bs_list); j++ {
-		b := bs_list[j].(map[string]interface{})
+		b := &bs_list[j]
 		//log.Printf("境界%d - %s (%s)", j, b["name"].(string), b["boundary_type"].(string))
 		bss[j] = _get_boundary(b, h_c_js, h_s_r_js, w, n_rm)
 	}
@@ -359,8 +361,8 @@ func NewBoundaries(id_rm_is []int, bs_list []interface{}, w *Weather) *Boundarie
 }
 
 /*
-
 Args
+
 	b Boundary　の辞書
 	h_c_js 境界 j の室内側表面対流熱伝達率, W/m2K, [J, 1]
 	h_s_r_js 境界 j の室内側表面放射熱伝達率, W/m2K, [J, 1]
@@ -368,10 +370,11 @@ Args
 	n_rm 室の数
 
 Returns
+
 	Boundary クラス
 */
 func _get_boundary(
-	b map[string]interface{},
+	b *BoudaryJson,
 	h_c_js []float64,
 	h_s_r_js []float64,
 	w *Weather,
@@ -380,29 +383,26 @@ func _get_boundary(
 
 	// ID
 	// TODO ID が0始まりで1ずつ増え、一意であることのチェックを行うコードを追記する。
-	boundary_id := int(b["id"].(float64))
+	boundary_id := int(b.Id)
 
 	// 名前
-	name := b["name"].(string)
+	name := b.Name
 
 	// 副名称
-	var sub_name string
-	if v, ok := b["sub_name"].(string); ok {
-		sub_name = v
-	}
+	sub_name := b.SubName
 
 	// 接する室のID
 	// TODO 指定された room_id が存在するかどうかをチェックするコードを追記する。
-	connected_room_id := int(b["connected_room_id"].(float64))
+	connected_room_id := int(b.ConnectedRoomId)
 
 	// 境界の種類
-	boundary_type, err := BoundaryFromString(b["boundary_type"].(string))
+	boundary_type, err := BoundaryFromString(b.BoundaryType)
 	if err != nil {
 		panic(err)
 	}
 
 	// 面積, m2
-	area := b["area"].(float64)
+	area := b.Area
 	if area <= 0.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の面積で0以下の値が指定されました。", boundary_id))
 	}
@@ -414,7 +414,7 @@ func _get_boundary(
 	if boundary_type == BoundaryTypeExternalGeneralPart ||
 		boundary_type == BoundaryTypeExternalTransparentPart ||
 		boundary_type == BoundaryTypeExternalOpaquePart {
-		h_td = b["temp_dif_coef"].(float64)
+		h_td = b.TempDifCoef
 	} else if boundary_type == BoundaryTypeGround {
 		h_td = 1.0
 	} else {
@@ -431,20 +431,20 @@ func _get_boundary(
 	// TODO 指定された rear_surface_boundary_id の rear_surface_boundary_id が自分自信のIDかどうかのチェックが必要かもしれない。
 	var rear_surface_boundary_id int
 	if boundary_type == BoundaryTypeInternal {
-		rear_surface_boundary_id = int(b["rear_surface_boundary_id"].(float64))
+		rear_surface_boundary_id = int(b.RearSurfaceBoundaryId)
 	} else {
 		// 便宜的にありえない値を入れている
 		rear_surface_boundary_id = InvalidRearSurfaceBoundaryID
 	}
 
 	// 室内侵入日射吸収の有無 (True吸収する/False吸収しない)
-	is_solar_absorbed_inside := b["is_solar_absorbed_inside"].(bool)
+	is_solar_absorbed_inside := b.IsSolarAbsorbedInside
 
 	// 床か否か(True床/False床以外)
-	is_floor := b["is_floor"].(bool)
+	is_floor := b.IsFloor
 
 	// 室内側表面対流熱伝達率, W/m2K
-	h_s_c := b["h_c"].(float64)
+	h_s_c := b.H_c
 
 	// 室内側表面放射熱伝達率, W/m2K
 	h_s_r := h_s_r_js[boundary_id]
@@ -455,7 +455,7 @@ func _get_boundary(
 	if boundary_type == BoundaryTypeExternalGeneralPart ||
 		boundary_type == BoundaryTypeExternalTransparentPart ||
 		boundary_type == BoundaryTypeExternalOpaquePart {
-		is_sun_striked_outside = b["is_sun_striked_outside"].(bool)
+		is_sun_striked_outside = b.IsSunStrikedOtside
 	} else {
 		is_sun_striked_outside = false
 	}
@@ -473,19 +473,19 @@ func _get_boundary(
 		// 透過日射量, W, [N+1]
 		q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 
-		layers := b["layers"].([]interface{})
+		layers := b.Layers
 		cs := make([]float64, len(layers))
 		rs := make([]float64, len(layers))
 		rs_sum := 0.0
 		for i := range layers {
-			layer := layers[i].(map[string]interface{})
+			layer := &layers[i]
 			cs[i] = _read_cs_j_l(layer)
 			rs[i] = _read_rs_j_l(layer)
 			rs_sum += rs[i]
 		}
 
-		rear_h_c := h_c_js[int(b["rear_surface_boundary_id"].(float64))]
-		rear_h_r := h_s_r_js[int(b["rear_surface_boundary_id"].(float64))]
+		rear_h_c := h_c_js[int(b.RearSurfaceBoundaryId)]
+		rear_h_r := h_s_r_js[int(b.RearSurfaceBoundaryId)]
 
 		r_o := 1.0 / (rear_h_c + rear_h_r)
 
@@ -500,10 +500,10 @@ func _get_boundary(
 		if is_sun_striked_outside {
 
 			// 方位
-			drct_j := DirectionFromString(b["direction"].(string))
+			drct_j := DirectionFromString(b.Direction)
 
 			// 日除け
-			ssp_j := NewSolarShading(b["solar_shading_part"].(map[string]interface{}), drct_j)
+			ssp_j := NewSolarShading(&b.SolarShadingPart, drct_j)
 
 			// 境界jの室外側日射吸収率, -
 			a_s_j := _read_a_s_j(b, boundary_id)
@@ -526,18 +526,18 @@ func _get_boundary(
 		// 透過日射量, W, [N+1]
 		q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 
-		layers := b["layers"].([]interface{})
+		layers := b.Layers
 		cs := make([]float64, len(layers))
 		rs := make([]float64, len(layers))
 		rs_sum := 0.0
 		for i := range layers {
-			layer := layers[i].(map[string]interface{})
+			layer := &layers[i]
 			cs[i] = _read_cs_j_l(layer)
 			rs[i] = _read_rs_j_l(layer)
 			rs_sum += rs[i]
 		}
 
-		r_o := b["outside_heat_transfer_resistance"].(float64)
+		r_o := b.OutsideHeatTransferResistance
 
 		rf = create_for_unsteady_not_ground(cs, rs, r_o)
 
@@ -551,19 +551,19 @@ func _get_boundary(
 		if is_sun_striked_outside {
 
 			// 方位
-			drct_j := DirectionFromString(b["direction"].(string))
+			drct_j := DirectionFromString(b.Direction)
 
 			// 日除け
-			ssp_j := NewSolarShading(b["solar_shading_part"].(map[string]interface{}), drct_j)
+			ssp_j := NewSolarShading(&b.SolarShadingPart, drct_j)
 
 			// 日射熱取得率
-			eta_value := b["eta_value"].(float64)
+			eta_value := b.EtaValue
 			if eta_value <= 0.0 {
 				panic(fmt.Sprintf("境界(ID=%d)の日射熱取得率で0.0以下の値が指定されました。", boundary_id))
 			}
 
 			// 開口部の面積に対するグレージングの面積の比率
-			glass_area_ratio := b["glass_area_ratio"].(float64)
+			glass_area_ratio := b.GlassAreaRatio
 			if glass_area_ratio < 0.0 {
 				panic(fmt.Sprintf("境界(ID=%d)の開口部の面積に対するグレージング面積の比率で0.0未満の値が指定されました。", boundary_id))
 			}
@@ -572,7 +572,7 @@ func _get_boundary(
 			}
 
 			// グレージングの種類
-			glazing_type := GlassTypeFromString(b["incident_angle_characteristics"].(string))
+			glazing_type := GlassTypeFromString(b.IncidentAngleCharacteristics)
 
 			wdw_j := NewWindow(
 				u_value_j, eta_value, glazing_type, glass_area_ratio, FlameTypeMIXED_WOOD,
@@ -607,7 +607,7 @@ func _get_boundary(
 		// 応答係数
 		rf = create_for_steady(u_value_j, r_i_nominal)
 
-		u_value_nominal := b["u_value"].(float64)
+		u_value_nominal := b.UValue
 
 		simulation_u_value = 1.0 / (1.0/u_value_nominal - r_i_nominal + 1.0/(h_s_c+h_s_r))
 
@@ -616,10 +616,10 @@ func _get_boundary(
 		if is_sun_striked_outside {
 
 			// 方位
-			drct_j := DirectionFromString(b["direction"].(string))
+			drct_j := DirectionFromString(b.Direction)
 
 			// 日除け
-			ssp_j := NewSolarShading(b["solar_shading_part"].(map[string]interface{}), drct_j)
+			ssp_j := NewSolarShading(&b.SolarShadingPart, drct_j)
 
 			// 室外側日射吸収率
 			a_s_j := _read_a_s_j(b, boundary_id)
@@ -650,7 +650,7 @@ func _get_boundary(
 
 		rf = create_for_steady(u_value_j, r_i_nominal)
 
-		u_value_nominal := b["u_value"].(float64)
+		u_value_nominal := b.UValue
 		simulation_u_value = 1.0 / (1.0/u_value_nominal - r_i_nominal + 1.0/(h_s_c+h_s_r))
 
 	} else if boundary_type == BoundaryTypeGround {
@@ -661,12 +661,12 @@ func _get_boundary(
 		// 透過日射量, W, [N+1]
 		q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 
-		layers := b["layers"].([]interface{})
+		layers := b.Layers
 		cs := make([]float64, len(layers))
 		rs := make([]float64, len(layers))
 		rs_sum := 0.0
 		for i := range layers {
-			layer := layers[i].(map[string]interface{})
+			layer := &layers[i]
 			cs[i] = _read_cs_j_l(layer)
 			rs[i] = _read_rs_j_l(layer)
 			rs_sum += rs[i]
@@ -806,17 +806,19 @@ func (self *Boundaries) _get_boundary_by_id(boundary_id int) *Boundary {
 }
 
 /*
-   室内側熱伝達抵抗を取得する。
-   Args:
-       b: 境界の辞書
-       boundary_id: 境界のID
+室内側熱伝達抵抗を取得する。
+Args:
 
-   Returns:
-       室内側熱伝達抵抗, m2K/W
+	b: 境界の辞書
+	boundary_id: 境界のID
+
+Returns:
+
+	室内側熱伝達抵抗, m2K/W
 */
-func _read_r_i_nominal(b map[string]interface{}, boundary_id int) float64 {
+func _read_r_i_nominal(b *BoudaryJson, boundary_id int) float64 {
 	// 室内側熱伝達抵抗, m2K/W
-	r_i := b["inside_heat_transfer_resistance"].(float64)
+	r_i := b.InsideHeatTransferResistance
 
 	if r_i <= 0.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の室内側熱伝達抵抗で00.0以下の値が指定されました。", boundary_id))
@@ -825,24 +827,25 @@ func _read_r_i_nominal(b map[string]interface{}, boundary_id int) float64 {
 	return r_i
 }
 
-func _read_cs_j_l(layer map[string]interface{}) float64 {
-	return layer["thermal_capacity"].(float64)
+func _read_cs_j_l(layer *LayerJson) float64 {
+	return layer.ThermalCapacity
 }
 
-func _read_rs_j_l(layer map[string]interface{}) float64 {
-	return layer["thermal_resistance"].(float64)
+func _read_rs_j_l(layer *LayerJson) float64 {
+	return layer.ThermalResistance
 }
 
 /*
 境界jの室外側日射吸収率を取得する。
-    Args:
-        b: 境界を表す辞書
-    Returns:
-        境界jの室外側日射吸収率, -
-*/
-func _read_a_s_j(b map[string]interface{}, boundary_id int) float64 {
 
-	a_s := b["outside_solar_absorption"].(float64)
+	Args:
+	    b: 境界を表す辞書
+	Returns:
+	    境界jの室外側日射吸収率, -
+*/
+func _read_a_s_j(b *BoudaryJson, boundary_id int) float64 {
+
+	a_s := b.OutsideSolarAbsorption
 	if a_s < 0.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の日射吸収率で0.0未満の値が指定されました。", boundary_id))
 	}
@@ -853,9 +856,9 @@ func _read_a_s_j(b map[string]interface{}, boundary_id int) float64 {
 	return a_s
 }
 
-func _read_u_nominal_j(b map[string]interface{}, boundary_id int) float64 {
+func _read_u_nominal_j(b *BoudaryJson, boundary_id int) float64 {
 
-	u_nominal_j := b["u_value"].(float64)
+	u_nominal_j := b.UValue
 
 	if u_nominal_j <= 0.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の熱貫流率で0.0以下の値が指定されました。", boundary_id))
@@ -864,9 +867,9 @@ func _read_u_nominal_j(b map[string]interface{}, boundary_id int) float64 {
 	return u_nominal_j
 }
 
-func _read_r_s_o_j(b map[string]interface{}, boundary_id int) float64 {
+func _read_r_s_o_j(b *BoudaryJson, boundary_id int) float64 {
 
-	r_surf := b["outside_heat_transfer_resistance"].(float64)
+	r_surf := b.OutsideHeatTransferResistance
 	if r_surf <= 0.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の室外側熱伝達抵抗で0.0以下の値が指定されました。", boundary_id))
 	}
@@ -874,8 +877,8 @@ func _read_r_s_o_j(b map[string]interface{}, boundary_id int) float64 {
 	return r_surf
 }
 
-func _read_eps_r_o_j(b map[string]interface{}, boundary_id int) float64 {
-	eps_r := b["outside_emissivity"].(float64)
+func _read_eps_r_o_j(b *BoudaryJson, boundary_id int) float64 {
+	eps_r := b.OutsideEmissivity
 
 	if eps_r > 1.0 {
 		panic(fmt.Sprintf("境界(ID=%d)の室外側長波長放射率で1.0を超える値が指定されました。", boundary_id))

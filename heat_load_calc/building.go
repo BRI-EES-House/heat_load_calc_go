@@ -100,9 +100,9 @@ func NewBuilding(
 	}
 }
 
-func CreateBuilding(d map[string]interface{}) *Building {
-	ifl := d["infiltration"].(map[string]interface{})
-	ifl_method := ifl["method"].(string)
+func CreateBuilding(d *BuildingJson) *Building {
+	ifl := d.Infiltration
+	ifl_method := ifl.Method
 
 	var story Story
 	var c_value float64
@@ -110,22 +110,22 @@ func CreateBuilding(d map[string]interface{}) *Building {
 
 	if ifl_method == "balance_residential" {
 		// 建物の階数
-		story = Story(int(ifl["story"].(float64)))
+		story = Story(int(ifl.Story))
 
 		// C値
-		switch ifl["c_value_estimate"].(string) {
+		switch ifl.CValueEstimate {
 		case "specify":
-			c_value = ifl["c_value"].(float64)
+			c_value = ifl.CValue
 		case "calculate":
-			ua_value := ifl["ua_value"].(float64)
-			structure := StructureFromString(ifl["struct"].(string))
+			ua_value := ifl.UAValue
+			structure := StructureFromString(ifl.Structure)
 			c_value = _estimate_c_value(ua_value, structure)
 		default:
-			panic(ifl["c_value_estimate"])
+			panic(ifl.CValueEstimate)
 		}
 
 		// 換気の種類
-		inside_pressure = InsidePressureFromString(ifl["inside_pressure"].(string))
+		inside_pressure = InsidePressureFromString(ifl.InsidePressure)
 	} else {
 		panic(ifl_method)
 	}
@@ -142,10 +142,13 @@ func CreateBuilding(d map[string]interface{}) *Building {
 Calculate the leakage air volume
 This calculation is approx. expression based on the elaborate results obtained by solving for pressure balance
 Args:
+
 	theta_r_is_n: room temperature of room i in step n, degree C, [i,1]
 	theta_o_n: outdoor temperature at step n, degree C
 	v_room_is: room volume of room i, m3, [i,1]
+
 Returns:
+
 	leakage air volume of rooms at step n, m3/s, [i,1]
 */
 func (self *Building) get_v_leak_is_n(
@@ -175,11 +178,14 @@ func (self *Building) get_v_leak_is_n(
 }
 
 /*
-   Args
-       ua_value: UA値, W/m2 K
-       struct: 構造
-   Returns:
-       C値, cm2/m2
+Args
+
+	ua_value: UA値, W/m2 K
+	struct: 構造
+
+Returns:
+
+	C値, cm2/m2
 */
 func _estimate_c_value(uaValue float64, structure Structure) float64 {
 	a := map[Structure]float64{
@@ -193,14 +199,14 @@ func _estimate_c_value(uaValue float64, structure Structure) float64 {
 }
 
 /*
-	calculate leakage air volume of rooms at step n
-    Args:
-        n_leak_n: ventilation rate of air leakage at step n, 1/h
-        v_rm_is: room volume of rooms, m3, [i, 1]
-    Returns:
-        air leakage volume of rooms at step n, m3/s, [i, 1]
-    Note:
-        eq.2
+		calculate leakage air volume of rooms at step n
+	    Args:
+	        n_leak_n: ventilation rate of air leakage at step n, 1/h
+	        v_rm_is: room volume of rooms, m3, [i, 1]
+	    Returns:
+	        air leakage volume of rooms at step n, m3/s, [i, 1]
+	    Note:
+	        eq.2
 */
 func _get_v_leak_is_n(n_leak_n float64, v_rm_is []float64) []float64 {
 	v_leak_is_n := make([]float64, len(v_rm_is))
@@ -211,19 +217,19 @@ func _get_v_leak_is_n(n_leak_n float64, v_rm_is []float64) []float64 {
 }
 
 /*
-	Calculate the leakage air volume
-    This calculation is approx. expression based on the elaborate results obtained by solving for pressure balance
-    Args:
-        c_value: equivalent leakage area (C value), cm2/m2
-        story: story
-        inside_pressure: inside pressure against outdoor pressure
-            'negative': negative pressure
-            'positive': positive pressure
-            'balanced': balanced
-    Returns:
-        air leakage volume at step n, m3/s, [i,1]
-    Note:
-        eq.3
+		Calculate the leakage air volume
+	    This calculation is approx. expression based on the elaborate results obtained by solving for pressure balance
+	    Args:
+	        c_value: equivalent leakage area (C value), cm2/m2
+	        story: story
+	        inside_pressure: inside pressure against outdoor pressure
+	            'negative': negative pressure
+	            'positive': positive pressure
+	            'balanced': balanced
+	    Returns:
+	        air leakage volume at step n, m3/s, [i,1]
+	    Note:
+	        eq.3
 */
 func _get_n_leak_n(
 	c_value float64,
@@ -287,17 +293,17 @@ func _get_n_leak_n(
 }
 
 /*
-	Calculate the temperature difference between room and outdoor.
+		Calculate the temperature difference between room and outdoor.
 
-    Args:
-        theta_average_r_n: averate room temperature at step n, degree C
-        theta_o_n: outdoor temperature at step n, degree C
+	    Args:
+	        theta_average_r_n: averate room temperature at step n, degree C
+	        theta_o_n: outdoor temperature at step n, degree C
 
-    Returns:
-        temperature difference between room and outdoor at step n, K
+	    Returns:
+	        temperature difference between room and outdoor at step n, K
 
-    Notes:
-        eq.4
+	    Notes:
+	        eq.4
 */
 func _get_delta_theta_n(theta_average_r_n float64, theta_o_n float64) float64 {
 
@@ -307,17 +313,17 @@ func _get_delta_theta_n(theta_average_r_n float64, theta_o_n float64) float64 {
 }
 
 /*
-	Calculate the average air temperature at step n which is weghted by room volumes.
+		Calculate the average air temperature at step n which is weghted by room volumes.
 
-    Args:
-        theta_r_is_n: room temperature of room i in step n, degree C, [i, 1]
-        v_rm_is: room volume of room i, m3, [i, 1]
+	    Args:
+	        theta_r_is_n: room temperature of room i in step n, degree C, [i, 1]
+	        v_rm_is: room volume of room i, m3, [i, 1]
 
-    Returns:
-        average air temperature at step n, degree C
+	    Returns:
+	        average air temperature at step n, degree C
 
-    Note:
-        eq.5
+	    Note:
+	        eq.5
 */
 func _get_theta_average_r_n(theta_r_is_n []float64, v_rm_is []float64) float64 {
 	return stat.Mean(theta_r_is_n, v_rm_is)

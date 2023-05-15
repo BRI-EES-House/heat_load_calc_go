@@ -63,17 +63,18 @@ type Sequence struct {
 }
 
 /*
-   Args:
-       itv: 時間間隔
-       rd:
-       weather:
-       scd:
-       q_trs_sol_is_ns:
-       theta_o_eqv_js_ns:
+Args:
+
+	itv: 時間間隔
+	rd:
+	weather:
+	scd:
+	q_trs_sol_is_ns:
+	theta_o_eqv_js_ns:
 */
 func NewSequence(
 	itv Interval,
-	rd map[string]interface{},
+	rd *InputJson,
 	weather *Weather,
 	scd *Schedule,
 ) *Sequence {
@@ -81,27 +82,27 @@ func NewSequence(
 	delta_t := itv.get_delta_t()
 
 	// Building Class
-	building := CreateBuilding(rd["building"].(map[string]interface{}))
+	building := CreateBuilding(&rd.Building)
 
 	// Rooms Class
-	rms, err := NewRooms(rd["rooms"].([]interface{}))
+	rms, err := NewRooms(rd.Rooms)
 	if err != nil {
 		panic(err)
 	}
 
 	// Boundaries Class
-	bs := NewBoundaries(rms.id_rm_is, rd["boundaries"].([]interface{}), weather)
+	bs := NewBoundaries(rms.id_rm_is, rd.Boundaries, weather)
 
 	// MechanicalVentilation Class
-	mvs := NewMechanicalVentilations(rd["mechanical_ventilations"].([]interface{}), rms.n_rm)
+	mvs := NewMechanicalVentilations(rd.MechanicalVentilations, rms.n_rm)
 
 	// Equipments Class
 	// TODO: Equipments Class を作成するのに Boundaries Class 全部をわたしているのはあまりよくない。
-	es := NewEquipments(rd["equipments"].(map[string]interface{}), rms.n_rm, bs.n_b, bs)
+	es := NewEquipments(&rd.Equipments, rms.n_rm, bs.n_b, bs)
 
 	// Operation Class
 	op := make_operation(
-		rd["common"].(map[string]interface{}),
+		&rd.Common,
 		scd.ac_setting_is_ns,
 		scd.ac_demand_is_ns,
 		rms.n_rm,
@@ -177,16 +178,18 @@ func (s *Sequence) run_tick_ground(gc_n *GroundConditions, n int, nn int) *Groun
 }
 
 /*
-
 Args:
-    f_ax_js_js: 係数 f_{AX}, -, [j, j]
-    f_crx_js_ns: 係数 f_{CRX,n}, degree C, [j, n]
+
+	f_ax_js_js: 係数 f_{AX}, -, [j, j]
+	f_crx_js_ns: 係数 f_{CRX,n}, degree C, [j, n]
 
 Returns:
-    係数 f_{WSC,n}, degree C, [j, n]
+
+	係数 f_{WSC,n}, degree C, [j, n]
 
 Notes:
-    式(4.1)
+
+	式(4.1)
 */
 func get_f_wsc_js_ns(f_ax_js_js *mat.LU, f_crx_js_ns mat.Matrix) *mat.Dense {
 	var temp1 mat.Dense
@@ -195,16 +198,18 @@ func get_f_wsc_js_ns(f_ax_js_js *mat.LU, f_crx_js_ns mat.Matrix) *mat.Dense {
 }
 
 /*
-
 Args:
-    f_ax_js_js: 係数 f_AX, -, [j, j]
-    f_fia_js_is: 係数 f_FIA, -, [j, i]
+
+	f_ax_js_js: 係数 f_AX, -, [j, j]
+	f_fia_js_is: 係数 f_FIA, -, [j, i]
 
 Returns:
-    係数 f_WSR, -, [j, i]
+
+	係数 f_WSR, -, [j, i]
 
 Notes:
-    式(4.2)
+
+	式(4.2)
 */
 func get_f_wsr_js_is(f_ax_js_js *mat.LU, f_fia_js_is mat.Matrix) *mat.Dense {
 	var temp1 mat.Dense
@@ -213,22 +218,24 @@ func get_f_wsr_js_is(f_ax_js_js *mat.LU, f_fia_js_is mat.Matrix) *mat.Dense {
 }
 
 /*
-
 Args:
-    h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
-    h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
-    k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
-    phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
-    phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
-    q_s_sol_js_ns: ステップ n における境界 j の透過日射吸収熱量, W/m2, [j, n]
-    k_eo_js: 境界 j の裏面温度に境界 j の相当外気温度が与える影響, -, [j, 1]
-    theta_o_eqv_js_ns: ステップ n における境界 j の相当外気温度, degree C, [j, 1]
+
+	h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
+	h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
+	k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
+	phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
+	phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
+	q_s_sol_js_ns: ステップ n における境界 j の透過日射吸収熱量, W/m2, [j, n]
+	k_eo_js: 境界 j の裏面温度に境界 j の相当外気温度が与える影響, -, [j, 1]
+	theta_o_eqv_js_ns: ステップ n における境界 j の相当外気温度, degree C, [j, 1]
 
 Returns:
-    係数 f_CRX, degree C, [j, n]
+
+	係数 f_CRX, degree C, [j, n]
 
 Notes:
-    式(4.3)
+
+	式(4.3)
 */
 func get_f_crx_js_ns(
 	h_s_c_js mat.Vector,
@@ -263,18 +270,21 @@ func get_f_crx_js_ns(
 
 /*
 Args:
-    h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
-    h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
-    k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
-    p_js_is: 室 i と境界 j の接続に関する係数（境界 j が室 i に接している場合は 1 とし、それ以外の場合は 0 とする。）, -, [j, i]
-    phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
-    phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
+
+	h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
+	h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
+	k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
+	p_js_is: 室 i と境界 j の接続に関する係数（境界 j が室 i に接している場合は 1 とし、それ以外の場合は 0 とする。）, -, [j, i]
+	phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
+	phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
 
 Returns:
-    係数 f_FIA, -, [j, i]
+
+	係数 f_FIA, -, [j, i]
 
 Notes:
-    式(4.4)
+
+	式(4.4)
 */
 func get_f_fia_js_is(
 	h_s_c_js mat.Vector,
@@ -312,21 +322,23 @@ func get_f_fia_js_is(
 }
 
 /*
-
 Args:
-    f_mrt_is_js: 室 i の微小球に対する境界 j の形態係数, -, [i, j]
-    h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
-    h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
-    k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
-    p_js_is: 室 i と境界 j の接続に関する係数（境界 j が室 i に接している場合は 1 とし、それ以外の場合は 0 とする。）, -, [j, i]
-    phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
-    phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
+
+	f_mrt_is_js: 室 i の微小球に対する境界 j の形態係数, -, [i, j]
+	h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
+	h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
+	k_ei_js_js: 境界 j の裏面温度に境界　j∗ の等価温度が与える影響, -, [j, j]
+	p_js_is: 室 i と境界 j の接続に関する係数（境界 j が室 i に接している場合は 1 とし、それ以外の場合は 0 とする。）, -, [j, i]
+	phi_a0_js: 境界 j の吸熱応答係数の初項, m2 K/W, [j, 1]
+	phi_t0_js: 境界 j の貫流応答係数の初項, -, [j, 1]
 
 Returns:
-    係数 f_AX, -, [j, j]
+
+	係数 f_AX, -, [j, j]
 
 Notes:
-    式(4.5)
+
+	式(4.5)
 */
 func get_f_ax_js_is(
 	f_mrt_is_js mat.Matrix,
@@ -388,16 +400,18 @@ func get_f_ax_js_is(
 }
 
 /*
-
 Args:
-    v_vent_mec_general_is: ステップ n からステップ n+1 における室 i の機械換気量（全般換気量）, m3/s, [i, 1]
-    v_vent_mec_local_is_ns: ステップ n からステップ n+1 における室 i の機械換気量（局所換気量）, m3/s, [i, 1]
+
+	v_vent_mec_general_is: ステップ n からステップ n+1 における室 i の機械換気量（全般換気量）, m3/s, [i, 1]
+	v_vent_mec_local_is_ns: ステップ n からステップ n+1 における室 i の機械換気量（局所換気量）, m3/s, [i, 1]
 
 Returns:
-    ステップ n からステップ n+1 における室 i の機械換気量（全般換気量と局所換気量の合計値）, m3/s, [i, 1]
+
+	ステップ n からステップ n+1 における室 i の機械換気量（全般換気量と局所換気量の合計値）, m3/s, [i, 1]
 
 Notes:
-    式(4.7)
+
+	式(4.7)
 */
 func get_v_vent_mec_is_ns(
 	v_vent_mec_general_is []float64,
@@ -421,6 +435,7 @@ func get_v_vent_mec_is_ns(
 助走計算用パラメータの生成
 
 Args:
+
 	scd: Scheduleクラス
 	rms: Roomsクラス
 	bs: Boundariesクラス
@@ -428,6 +443,7 @@ Args:
 	es: Equipmenstクラス
 
 Returns:
+
 	PreCalcParametersクラス
 */
 func _pre_calc(
@@ -570,12 +586,15 @@ func _pre_calc(
 /*
 室の温湿度・熱負荷の計算
 Args:
+
 	n: ステップ
 	delta_t: 時間間隔, s
 	ss: ループ計算前に計算可能なパラメータを含めたクラス
 	c_n: 前の時刻からの状態量
 	recorder: Recorder クラス
+
 Returns:
+
 	次の時刻にわたす状態量
 */
 func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *PreCalcParameters, c_n *Conditions, recorder *Recorder) *Conditions {
@@ -1158,8 +1177,8 @@ func _run_tick_ground(self *Sequence, pp *PreCalcParameters, gc_n *GroundConditi
 }
 
 /*
-
 Args:
+
 	c_lh_frt_is: 室 i の備品等の湿気容量, kg/(kg/kg(DA)), [i, 1]
 	delta_t: 1ステップの時間間隔, s
 	g_lh_frt_is: 室 i の備品等と空気間の湿気コンダクタンス, kg/(s kg/kg(DA)), [i, 1]
@@ -1167,11 +1186,12 @@ Args:
 	x_r_is_n_pls: ステップ n+1 における室 i の絶対湿度, kg/kg(DA), [i, 1]
 
 Returns:
+
 	ステップ n+1 における室 i の備品等等の絶対湿度, kg/kg(DA), [i, 1]
 
 Notes:
-	式(1.1)
 
+	式(1.1)
 */
 func get_x_frt_is_n_pls(
 	c_lh_frt_is mat.Vector,
@@ -1204,19 +1224,20 @@ func get_x_frt_is_n_pls(
 }
 
 /*
-
 Args:
+
 	f_l_cl_wgt_is_is_n: 係数, kg/(s (kg/kg(DA)))
 	f_l_cl_cst_is_n: 係数, kg/s
 	l_wtr: 水の蒸発潜熱, J/kg
 	x_r_is_n_pls: ステップ n+1 における室 i の絶対湿度, kg/kg(DA)
 
 Returns:
+
 	ステップ n から ステップ n+1 における室 i の潜熱負荷（加湿を正・除湿を負とする）, W
 
 Notes:
-	式(1.2)
 
+	式(1.2)
 */
 func get_l_cl_is_n(
 	f_l_cl_wgt_is_is_n mat.Matrix,
@@ -1233,19 +1254,20 @@ func get_l_cl_is_n(
 }
 
 /*
-
 Args:
+
 	f_h_cst_is_n: 係数, kg/s
 	f_h_wgt_is_is_n: 係数, kg/(s (kg/kg(DA)))
 	f_l_cl_cst_is_n: 係数, kg/s
 	f_l_cl_wgt_is_is_n: 係数, kg/(s (kg/kg(DA)))
 
 Returns:
+
 	ステップ n+1 における室 i の 絶対湿度, kg/kg(DA), [i, 1]
 
 Notes:
-	式(1.3)
 
+	式(1.3)
 */
 func get_x_r_is_n_pls(
 	f_h_cst_is_n []float64,
@@ -1271,19 +1293,20 @@ func get_x_r_is_n_pls(
 }
 
 /*
+Args:
 
-   Args:
-       f_h_cst_non_nv_is_n: ステップnにおける自然風非利用時の室iの係数f_h_cst, kg/s
-       f_h_wgt_non_nv_is_is_n: ステップnにおける自然風利用時の室iの係数f_h_wgt, kg/(s (kg/kg(DA)))
-       f_h_cst_nv_is_n: ステップnにおける自然風利用時の室iの係数f_h_cst, kg/s
-       f_h_wgt_nv_is_is_n: ステップnにおける自然風利用時の室iの係数f_wgt, kg/(s (kg/kg(DA)))
+	f_h_cst_non_nv_is_n: ステップnにおける自然風非利用時の室iの係数f_h_cst, kg/s
+	f_h_wgt_non_nv_is_is_n: ステップnにおける自然風利用時の室iの係数f_h_wgt, kg/(s (kg/kg(DA)))
+	f_h_cst_nv_is_n: ステップnにおける自然風利用時の室iの係数f_h_cst, kg/s
+	f_h_wgt_nv_is_is_n: ステップnにおける自然風利用時の室iの係数f_wgt, kg/(s (kg/kg(DA)))
 
-   Returns:
-       ステップ n+1 における室 i の加湿・除湿を行わない場合の絶対湿度, kg/kg(DA) [i, 1]
+Returns:
 
-   Notes:
-       式(1.4)
+	ステップ n+1 における室 i の加湿・除湿を行わない場合の絶対湿度, kg/kg(DA) [i, 1]
 
+Notes:
+
+	式(1.4)
 */
 func get_x_r_ntr_is_n_pls(
 	f_h_cst_non_nv_is_n mat.Vector,
@@ -1298,8 +1321,8 @@ func get_x_r_ntr_is_n_pls(
 }
 
 /*
-
 Args:
+
 	c_lh_frt_is: 室 i の備品等の湿気容量, kg/(kg/kg(DA)), [i, 1]
 	delta_t: 1ステップの時間間隔, s
 	g_lh_frt_is: 室 i の備品等と空気間の湿気コンダクタンス, kg/(s kg/kg(DA)), [i, 1]
@@ -1308,11 +1331,12 @@ Args:
 	v_vent_out_is_n: ステップ n から ステップ n+1 における室 i の換気・すきま風・自然風の利用による外気の流入量, m3/s
 
 Returns:
+
 	ステップ n における室 i* の絶対湿度が室 i の潜熱バランスに与える影響を表す係数,　kg/(s kg/kg(DA)), [i, i]
 
 Notes:
-	式(1.5)
 
+	式(1.5)
 */
 func get_f_h_wgt_is_is_n(
 	c_lh_frt_is mat.Vector,
@@ -1359,8 +1383,8 @@ func get_f_h_wgt_is_is_n(
 }
 
 /*
-
 Args:
+
 	c_lh_frt_is: 室 i の備品等の湿気容量, kg/(kg/kg(DA)), [i, 1]
 	delta_t: 1ステップの時間間隔, s
 	g_lh_frt_is: 室 i の備品等と空気間の湿気コンダクタンス, kg/(s kg/kg(DA)), [i, 1]
@@ -1379,8 +1403,8 @@ Returns:
 ステップnにおける室iの自然風の利用時の潜熱バランスに関する係数f_h_cst, kg/s, [i, 1]
 
 Notes:
-	式(1.6)
 
+	式(1.6)
 */
 func get_f_h_cst_is_n(
 	c_lh_frt_is mat.Vector,
@@ -1427,17 +1451,18 @@ func get_f_h_cst_is_n(
 }
 
 /*
-
 Args:
+
 	n_hum_is_n: ステップ n からステップ n+1 における室 i の在室人数, -
 	x_hum_psn_is_n: ステップ n からステップ n+1 における室 i の1人あたりの人体発湿, kg/s
 
 Returns:
+
 	ステップnの室iにおける人体発湿, kg/s, [i, 1]
 
 Notes:
-	式(1.7)
 
+	式(1.7)
 */
 func get_x_hum_is_n(n_hum_is_n []float64, x_hum_psn_is_n []float64) []float64 {
 	x_hum_is_n := make([]float64, len(x_hum_psn_is_n))
@@ -1446,19 +1471,20 @@ func get_x_hum_is_n(n_hum_is_n []float64, x_hum_psn_is_n []float64) []float64 {
 }
 
 /*
-
 Args:
+
 	h_s_c_js: 境界 j の室内側対流熱伝達率, W/(m2 K), [j, 1]
 	h_s_r_js: 境界 j の室内側放射熱伝達率, W/(m2 K), [j, 1]
 	theta_ei_js_n_pls: ステップ n+1 における境界 j の等価温度, degree C, [j, 1]
 	theta_s_js_n_pls: ステップ n+1 における境界 j の表面温度, degree C, [j, 1]
 
 Returns:
+
 	ステップ n+1 における境界 j の表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]
 
 Notes:
-	式(2.1)
 
+	式(2.1)
 */
 func get_q_s_js_n_pls(
 	h_s_c_js mat.Vector,
@@ -1477,8 +1503,8 @@ func get_q_s_js_n_pls(
 }
 
 /*
-
 Args:
+
 	a_s_js: 境界 j の面積, m2, [j, 1]
 	beta_is_n: ステップ n からステップ n+1 における室 i の放射暖冷房設備の対流成分比率, -, [i, 1]
 	f_mrt_is_js: 室 i の微小球に対する境界 j の形態係数, -, [i, j]
@@ -1492,10 +1518,12 @@ Args:
 	theta_s_js_n_pls: ステップ n+1 における境界 j の表面温度, degree C, [j, 1]
 
 Returns:
-	ステップ n+1 における境界 j の等価温度, degree C, [j, 1]
-Notes:
-	式(2.2)
 
+	ステップ n+1 における境界 j の等価温度, degree C, [j, 1]
+
+Notes:
+
+	式(2.2)
 */
 func get_theta_ei_js_n_pls(
 	a_s_js mat.Vector,
@@ -1545,17 +1573,18 @@ func get_theta_ei_js_n_pls(
 }
 
 /*
-
 Args:
+
 	f_mrt_hum_is_js: 室 i の人体に対する境界 j の形態係数, -, [i, j]
 	theta_s_js_n_pls: ステップ n+1 における境界 j の表面温度, degree C, [j, 1]
 
 Returns:
+
 	ステップ n+1 における室 i の人体に対する平均放射温度, degree C, [i, 1]
 
 Notes:
-	式(2.3)
 
+	式(2.3)
 */
 func get_theta_mrt_hum_is_n_pls(
 	f_mrt_hum_is_js mat.Matrix,
@@ -1569,8 +1598,8 @@ func get_theta_mrt_hum_is_n_pls(
 }
 
 /*
-
 Args:
+
 	c_sh_frt_is: 室 i の備品等の熱容量, J/K, [i, 1]
 	delta_t: 1ステップの時間間隔, s
 	g_sh_frt_is: 室 i の備品等と空気間の熱コンダクタンス, W/K, [i, 1]
@@ -1579,11 +1608,12 @@ Args:
 	theta_r_is_n_pls: ステップ n+1 における室 i の温度, degree C, [i, 1]
 
 Returns:
+
 	ステップ n+1 における室 i　の備品等の温度, degree C, [i, 1]
 
 Notes:
-	式(2.4)
 
+	式(2.4)
 */
 func get_theta_frt_is_n_pls(
 	c_sh_frt_is mat.Vector,
@@ -1622,8 +1652,8 @@ func get_theta_frt_is_n_pls(
 }
 
 /*
-
 Args:
+
 	f_wsb_js_is_n_pls: ステップ n+1 における係数 f_WSB, K/W, [j, 1]
 	f_wsc_js_n_pls: ステップ n+1 における係数 f_WSC, degree C, [j, 1]
 	f_wsr_js_is: 係数 f_WSR, - [j, i]
@@ -1632,11 +1662,12 @@ Args:
 	theta_r_is_n_pls: ステップ n+1 における室 i の温度, degree C, [i, 1]
 
 Returns:
+
 	ステップ n+1 における境界 j の表面温度, degree C, [j, 1]
 
 Notes:
-	式(2.5)
 
+	式(2.5)
 */
 func get_theta_s_js_n_pls(
 	f_wsb_js_is_n_pls mat.Matrix,
@@ -1658,8 +1689,8 @@ func get_theta_s_js_n_pls(
 }
 
 /*
-
 Args:
+
 	f_xc_is_n_pls: ステップ n+1 における係数 f_XC, degree C, [i, 1]
 	f_xlr_is_is_n_pls: ステップ n+1 における係数 f_XLR, K/W, [i, i]
 	f_xot_is_is_n_pls: ステップ n+1 における係数 f_XOT, -, [i, i]
@@ -1667,11 +1698,12 @@ Args:
 	theta_ot_is_n_pls: ステップ n+1 における室 i の作用温度, ℃
 
 Returns:
+
 	ステップ n+1 における室 i の室温, degree C, [i, 1]
 
 Notes:
-	式(2.6)
 
+	式(2.6)
 */
 func get_theta_r_is_n_pls(
 	f_xc_is_n_pls mat.Vector,
@@ -1700,18 +1732,19 @@ func get_theta_r_is_n_pls(
 }
 
 /*
-
 Args:
+
 	f_brl_is_is_n: ステップ n における係数 f_BRL, -, [i, i]
 	f_brm_is_is_n_pls: ステップ n+1 における係数 f_BRM, W/K, [i, i]
 	f_xlr_is_is_n_pls: ステップ n+1 における係数 f_XLR, K/W, [i, i]
 
 Returns:
+
 	ステップ n における係数 f_BRL,OT, -, [i, i]
 
 Notes:
-	式(2.8)
 
+	式(2.8)
 */
 func get_f_brl_ot_is_is_n(
 	f_brl_is_is_n mat.Matrix,
@@ -1725,19 +1758,20 @@ func get_f_brl_ot_is_is_n(
 }
 
 /*
-
 Args:
+
 	f_mrt_hum_is_js: 室 i の人体に対する境界 j の形態係数, -, [i, j]
 	f_wsb_js_is_n_pls: ステップ n+1 における係数 f_WSB, K/W, [j, 1]
 	f_xot_is_is_n_pls: ステップ n+1 における係数 f_XOT, -, [i, i]
 	k_r_is_n: ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 
 Returns:
+
 	ステップ n+1 における係数 f_XLR, K/W, [i, i]
 
 Notes:
-	式(2.9)
 
+	式(2.9)
 */
 func get_f_xlr_is_is_n_pls(
 	f_mrt_hum_is_js mat.Matrix,
@@ -1762,8 +1796,8 @@ func get_f_xlr_is_is_n_pls(
 }
 
 /*
-
 Args:
+
 	a_s_js: 境界 j の面積, m2, [j, 1]
 	beta_is_n: ステップ n からステップ n+1 における室 i の放射暖冷房設備の対流成分比率, -, [i, 1]
 	f_wsb_js_is_n_pls: ステップ n+1 における係数 f_WSB, K/W, [j, 1]
@@ -1771,11 +1805,12 @@ Args:
 	p_is_js: 室 i と境界 j の接続に関する係数（境界 j が室 i に接している場合は 1 とし、それ以外の場合は 0 とする。）, -, [i, j]
 
 Returns:
+
 	ステップ n における係数 f_BRL, -, [i, i]
 
 Notes:
-	式(2.10)
 
+	式(2.10)
 */
 func get_f_brl_is_is_n(
 	a_s_js mat.Vector,
@@ -1808,17 +1843,18 @@ func get_f_brl_is_is_n(
 }
 
 /*
-
 Args:
+
 	f_flb_js_is_n_pls: ステップ n+1 における係数 f_FLB, K/W, [j, i]
 	f_ax_js_js: 係数 f_AX, -, [j, j]
 
 Returns:
+
 	ステップ n+1 における係数 f_WSB, K/W, [j, i]
 
 Notes:
-	式(2.11)
 
+	式(2.11)
 */
 func get_f_wsb_js_is_n_pls(
 	f_flb_js_is_n_pls mat.Matrix,
@@ -1832,8 +1868,8 @@ func get_f_wsb_js_is_n_pls(
 }
 
 /*
-
 Args:
+
 	a_s_js: 境界 j の面積, m2, [j, 1]
 	beta_is_n: ステップ n からステップ n+1 における室 i の放射暖冷房設備の対流成分比率, -, [i, 1]
 	f_flr_js_is_n: ステップ n からステップ n+1 における室 i の放射暖冷房設備の放熱量の放射成分に対する境界 j の室内側表面の吸収比率, -, [j, i]
@@ -1844,11 +1880,12 @@ Args:
 	phi_t0_js: 境界 |j| の貫流応答係数の初項, -, [j]
 
 Returns:
+
 	ステップ n+1 における係数 f_FLB, K/W, [j, i]
 
 Notes:
-	式(2.12)
 
+	式(2.12)
 */
 func get_f_flb_js_is_n_pls(
 	a_s_js mat.Vector,
@@ -1900,16 +1937,18 @@ func get_f_flb_js_is_n_pls(
 }
 
 /*
-
 Args:
+
 	beta_c_is: 室 i の放射冷房設備の対流成分比率, -, [i, 1]
 	beta_h_is: 室 i の放射暖房設備の対流成分比率, -, [i, 1]
 	operation_mode_is_n: ステップnにおける室iの運転モード, [i, 1]
 
 Returns:
+
 	ステップ n からステップ n+1 における室 i の放射暖冷房設備の対流成分比率, -, [i, 1]
 
 Notes:
+
 	式(2.13)
 */
 func get_beta_is_n(
@@ -1936,19 +1975,20 @@ func get_beta_is_n(
 }
 
 /*
-
 Args:
+
 	f_flr_c_js_is: 室 i の放射冷房設備の放熱量の放射成分に対する境界 j の室内側表面の吸収比率, -, [j, i]
 	f_flr_h_js_is: 室 i の放射暖房設備の放熱量の放射成分に対する境界 j の室内側表面の吸収比率, -, [j, i]
 	is_cooling_is_n: 「ステップ n から n+1 における室 i の運転が冷房運転時の場合」かの有無, -, [i, 1]
 	is_heating_is_n: 「ステップ n から n+1 における室 i の運転が暖房運転時の場合」かの有無, -, [i, 1]
 
 Returns:
+
 	ステップ n からステップ n+1 における室 i の放射暖冷房設備の放熱量の放射成分に対する境界 j の室内側表面の吸収比率, -, [j, i]
 
 Notes:
-	式(2.14)
 
+	式(2.14)
 */
 func get_f_flr_js_is_n(
 	f_flr_c_js_is mat.Matrix,
@@ -1977,16 +2017,20 @@ func get_f_flr_js_is_n(
 
 /*
 Args:
+
 	f_xc_is_n_pls: ステップ n+1 における係数 f_XC, degree C, [i, 1]
 	f_brc_non_nv_is_n_pls: ステップn+1における自然風非利用時の係数f_BRC,OT, W, [i,1]
 	f_brc_nv_is_n_pls: ステップn+1における自然風利用時の係数f_BRC,OT, W, [i,1]
 	f_brm_non_nv_is_is_n_pls: ステップn+1における自然風非利用時の係数f_BRM,OT, W, [i,i]
 	f_brm_nv_is_is_n_pls: ステップn+1における自然風利用時の係数f_BRM,OT, W, [i,i]
+
 Returns:
+
 	ステップn+1における自然風非利用時の係数f_BRC,OT, W, [i, 1]
 	ステップn+1における自然風利用時の係数f_BRC,OT, W, [i, 1]
 
 Notes:
+
 	式(2.17)
 */
 func get_f_brc_ot_is_n_pls(
@@ -2013,16 +2057,18 @@ func get_f_brc_ot_is_n_pls(
 
 /*
 Args:
+
 	f_xot_is_is_n_pls: ステップ n+1 における係数 f_XOT, -, [i, i]
 	f_brm_non_nv_is_is_n_pls: ステップ n+1 における自然風非利用時の係数 f_BRM, W/K, [i, i]
 	f_brm_nv_is_is_n_pls: ステップ n+1 における自然風利用時の係数 f_BRM, W/K, [i, i]
 
-
 Returns:
+
 	ステップn+1における自然風非利用時の係数f_BRM,OT, W/K, [i, 1]
 	ステップn+1における自然風利用時の係数f_BRM,OT, W/K, [i, 1]
 
 Notes:
+
 	式(2.18)
 */
 func get_f_brm_ot_is_is_n_pls(f_xot_is_is_n_pls mat.Matrix, f_brm_non_nv_is_is_n_pls mat.Matrix, f_brm_nv_is_is_n_pls mat.Matrix) (mat.Matrix, mat.Matrix) {
@@ -2033,20 +2079,19 @@ func get_f_brm_ot_is_is_n_pls(f_xot_is_is_n_pls mat.Matrix, f_brm_non_nv_is_is_n
 }
 
 /*
+	    Args:
+	        f_brc_ot_non_nv_is_n_pls: ステップ n+1 における自然風の利用なし時の係数 f_BRC,OT, W, [i, 1]
+	        f_brc_ot_nv_is_n_pls: ステップ n+1 における自然風の利用時の係数 f_BRC,OT, W, [i, 1]
+	        f_brm_ot_non_nv_is_is_n_pls: ステップ n+1 における自然風の利用なし時の係数 f_BRM,OT, W/K, [i, 1]
+	        f_brm_ot_nv_is_is_n_pls: ステップ n+1 における自然風の利用時の係数 f_BRM,OT, W/K, [i, 1]
 
-    Args:
-        f_brc_ot_non_nv_is_n_pls: ステップ n+1 における自然風の利用なし時の係数 f_BRC,OT, W, [i, 1]
-        f_brc_ot_nv_is_n_pls: ステップ n+1 における自然風の利用時の係数 f_BRC,OT, W, [i, 1]
-        f_brm_ot_non_nv_is_is_n_pls: ステップ n+1 における自然風の利用なし時の係数 f_BRM,OT, W/K, [i, 1]
-        f_brm_ot_nv_is_is_n_pls: ステップ n+1 における自然風の利用時の係数 f_BRM,OT, W/K, [i, 1]
 
+	    Returns:
+	        ステップn+1における自然風非利用時の室iの自然作用温度, degree C, [i, 1]
+	        ステップn+1における自然風利用時の室iの自然作用温度, degree C, [i, 1]
 
-    Returns:
-        ステップn+1における自然風非利用時の室iの自然作用温度, degree C, [i, 1]
-        ステップn+1における自然風利用時の室iの自然作用温度, degree C, [i, 1]
-
-	Notes:
-		式(2.16)
+		Notes:
+			式(2.16)
 */
 func get_theta_r_ot_ntr_is_n_pls(
 	f_brc_ot_non_nv_is_n_pls mat.Vector,
@@ -2064,8 +2109,8 @@ func get_theta_r_ot_ntr_is_n_pls(
 }
 
 /*
-
 Args:
+
 	f_mrt_hum_is_js: 室 i の人体に対する境界 j の形態係数, -, [i, j]
 	f_wsc_js_n_pls: ステップ n+1 における係数 f_WSC, degree C, [j, 1]
 	f_wsv_js_n_pls: ステップ n+1 における係数 f_WSV, degree C, [j, 1]
@@ -2073,9 +2118,11 @@ Args:
 	k_r_is_n: ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 
 Returns:
+
 	ステップ n+1 における係数 f_XC, degree C, [i, 1]
 
 Notes:
+
 	式(2.19)
 */
 func get_f_xc_is_n_pls(
@@ -2108,17 +2155,19 @@ func get_f_xc_is_n_pls(
 }
 
 /*
-
 Args:
+
 	f_mrt_hum_is_js: 室 i の人体に対する境界 j の形態係数, -, [i, j]
 	f_wsr_js_is: 係数 f_WSR, - [j, i]
 	k_c_is_n: ステップ n における室 i の人体表面の対流熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 	k_r_is_n: ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 
 Returns:
+
 	ステップ n+1 における係数 f_XOT, -, [i, i]
 
 Notes:
+
 	式(2.20)
 */
 func get_f_xot_is_is_n_pls(
@@ -2165,15 +2214,17 @@ func get_f_xot_is_is_n_pls(
 }
 
 /*
-
 Args:
+
 	h_hum_c_is_n: ステップ n における室 i の人体表面の対流熱伝達率, W/(m2 K)
 	h_hum_r_is_n: ステップ n における室 i の人体表面の放射熱伝達率, W/(m2 K)
 
 Returns:
+
 	ステップ n における室 i の人体表面の対流熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 
 Notes:
+
 	式(2.21)
 */
 func get_k_c_is_n(h_hum_c_is_n mat.Vector, h_hum_r_is_n mat.Vector) *mat.VecDense {
@@ -2189,15 +2240,17 @@ func get_k_c_is_n(h_hum_c_is_n mat.Vector, h_hum_r_is_n mat.Vector) *mat.VecDens
 }
 
 /*
-
 Args:
+
 	h_hum_c_is_n: ステップ n における室 i の人体表面の対流熱伝達率, W/(m2 K)
 	h_hum_r_is_n: ステップ n における室 i の人体表面の放射熱伝達率, W/(m2 K)
 
 Returns:
+
 	ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 
 Notes:
+
 	式(2.22)
 */
 func get_k_r_is_n(h_hum_c_is_n mat.Vector, h_hum_r_is_n mat.Vector) *mat.VecDense {
@@ -2213,8 +2266,8 @@ func get_k_r_is_n(h_hum_c_is_n mat.Vector, h_hum_r_is_n mat.Vector) *mat.VecDens
 }
 
 /*
-
 Args:
+
 	a_s_js: 境界 j の面積, m2, [j, 1]
 	v_rm_is: 室 i の容積, m3, [i, 1]
 	c_sh_frt_is: 室 i の備品等の熱容量, J/K, [i, 1]
@@ -2228,9 +2281,11 @@ Args:
 	v_vent_out_is_n: ステップ n からステップ n+1 における室 i の換気・すきま風・自然風の利用による外気の流入量, m3/s
 
 Returns:
+
 	ステップ n+1 における係数 f_BRM, W/K, [i, i]
 
 Notes:
+
 	式(2.23)
 */
 func get_f_brm_is_is_n_pls(
@@ -2298,8 +2353,8 @@ func get_f_brm_is_is_n_pls(
 }
 
 /*
-
 Args:
+
 	a_s_js: 境界 j の面積, m2, [j, 1]
 	v_rm_is: 室容量, m3, [i, 1]
 	c_sh_frt_is: 室 i の備品等の熱容量, J/K, [i, 1]
@@ -2319,9 +2374,11 @@ Args:
 	v_vent_ntr_is_n: ステップnからステップn+1における室iの自然風の利用による外気の流入量, m3/s
 
 Returns:
+
 	ステップ n+1 における係数 f_BRC,OT, W, [i, 1]
 
 Notes:
+
 	式(2.24)
 */
 func get_f_brc_is_n_pls(
@@ -2402,15 +2459,17 @@ func get_f_brc_is_n_pls(
 }
 
 /*
-
 Args:
+
 	v_leak_is_n: ステップ n からステップ n+1 における室 i のすきま風量, m3/s, [i, 1]
 	v_vent_mec_is_n: ステップ n からステップ n+1 における室 i の機械換気量（全般換気量と局所換気量の合計値）, m3/s, [i, 1]
 
 Returns:
+
 	ステップ n からステップ n+1 における室 i の換気・すきま風・自然風の利用による外気の流入量, m3/s
 
 Notes:
+
 	式(2.25)
 */
 func get_v_vent_out_non_ntr_is_n(
@@ -2423,15 +2482,17 @@ func get_v_vent_out_non_ntr_is_n(
 }
 
 /*
-
 Args:
+
 	operation_mode_is_n: ステップ n からステップ n+1 における室 i の運転モード, [i, 1]
 	v_vent_ntr_set_is: 室 i の自然風利用時の換気量, m3/s
 
 Returns:
+
 	ステップ n からステップ n+1 における室 i の自然風利用による換気量, m3/s, [i, 1]
 
 Notes:
+
 	式(2.26)
 */
 func get_v_vent_ntr_is_n(operation_mode_is_n []OperationMode, v_vent_ntr_set_is mat.Vector) *mat.VecDense {
@@ -2447,15 +2508,17 @@ func get_v_vent_ntr_is_n(operation_mode_is_n []OperationMode, v_vent_ntr_set_is 
 }
 
 /*
-
 Args:
+
 	f_cvl_js_n_pls: ステップ n+1 における係数 f_CVL, degree C, [j, 1]
 	f_ax_js_js: 係数 f_AX, -, [j, j]
 
 Returns:
+
 	ステップ n+1 の係数 f_WSV, degree C, [j, 1]
 
 Notes:
+
 	式(2.27)
 */
 func get_f_wsv_js_n_pls(
@@ -2469,14 +2532,17 @@ func get_f_wsv_js_n_pls(
 }
 
 /*
-
 Args:
+
 	theta_dsh_s_a_js_ms_n_pls: ステップ n+1 における境界 j の項別公比法の指数項 m の吸熱応答の項別成分, degree C, [j, m]
 	theta_dsh_s_t_js_ms_n_pls: ステップ n+1 における境界 j の項別公比法の指数項 m の貫流応答の項別成分, degree C, [j, m]
 
 Returns:
+
 	ステップ n+1 における係数 f_CVL, degree C, [j, 1]
+
 Notes:
+
 	式(2.28)
 */
 func get_f_cvl_js_n_pls(
@@ -2499,17 +2565,19 @@ func get_f_cvl_js_n_pls(
 }
 
 /*
-
 Args:
+
 	phi_a1_js_ms: 境界 j の項別公比法の指数項 m の吸熱応答係数, m2 K/W, [j, m]
 	q_s_js_n: ステップ n における境界 j の表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]
 	r_js_ms: 境界 j の項別公比法の指数項 m の公比, -, [j, m]
 	theta_dsh_srf_a_js_ms_n: ステップ n における境界 j の項別公比法の指数項 m の吸熱応答の項別成分, degree C, [j, m]
 
 Returns:
+
 	ステップ n+1 における境界 j の項別公比法の指数項 m の吸熱応答の項別成分, degree C, [j, m]
 
 Notes:
+
 	式(2.29)
 */
 func get_theta_dsh_s_a_js_ms_n_pls(
@@ -2529,17 +2597,19 @@ func get_theta_dsh_s_a_js_ms_n_pls(
 }
 
 /*
-
 Args:
+
 	phi_t1_js_ms: 境界 j の項別公比法の指数項 m の貫流応答係数, -, [j, m]
 	r_js_ms: 境界 j の項別公比法の指数項 m の公比, -, [j, m]
 	theta_dsh_srf_t_js_ms_n: ステップ n における境界 j の項別公比法の指数項 m の貫流応答の項別成分, degree C, [j, m]
 	theta_rear_js_n: ステップ n における境界 j の裏面温度, degree C, [j, 1]
 
 Returns:
+
 	ステップ n+1 における境界 j の項別公比法の指数項 m の貫流応答の項別成分, degree C, [j, m]
 
 Notes:
+
 	式(2.30)
 */
 func get_theta_dsh_s_t_js_ms_n_pls(
@@ -2560,15 +2630,17 @@ func get_theta_dsh_s_t_js_ms_n_pls(
 }
 
 /*
-
 Args:
+
 	n_hum_is_n: ステップ n からステップ n+1 における室 i の在室人数, -, [i, 1]
 	q_hum_psn_is_n: ステップ n からステップ n+1 における室 i の1人あたりの人体発熱, W, [i, 1]
 
 Returns:
+
 	ステップ n からステップ n+1 における室 i の人体発熱, W, [i, 1]
 
 Notes:
+
 	式(2.31)
 */
 func get_q_hum_is_n(n_hum_is_n []float64, q_hum_psn_is_n []float64) []float64 {
@@ -2578,17 +2650,19 @@ func get_q_hum_is_n(n_hum_is_n []float64, q_hum_psn_is_n []float64) []float64 {
 }
 
 /*
-
 Args:
+
 	k_ei_js_js: 境界 j の裏面温度に境界　j* の等価温度が与える影響, -, [j*, j]
 	theta_ei_js_n: ステップ n における境界 j の等価温度, degree C, [j, 1]
 	k_eo_js: 温度差係数, -, [j, 1]
 	theta_o_eqv_js_n: ステップ n の境界 j における相当外気温度, ℃, [j, n]
 
 Returns:
+
 	ステップ n における境界 j の裏面温度, degree C, [j, 1]
 
 Notes:
+
 	式(2.32)
 */
 func get_theta_s_rear_js_n(

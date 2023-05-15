@@ -85,34 +85,36 @@ type EquipmentData struct {
 }
 
 /*
-	設備に関する情報を辞書形式で受け取り、データクラスに変換して保持する。
-	暖房・冷房それぞれにおいて、
-	辞書の中の "equipment_type" の種類に応じて対応するデータクラスを生成する。
+設備に関する情報を辞書形式で受け取り、データクラスに変換して保持する。
+暖房・冷房それぞれにおいて、
+辞書の中の "equipment_type" の種類に応じて対応するデータクラスを生成する。
 
-	Args:
-		dict_equipments: 設備の情報が記された辞書
-		n_rm: 部屋の数
-		n_b: 境界の数
-		bs: Boundariesクラス
+Args:
 
-	Notes:
-		ここで Boundaries クラスは、境界IDと室IDとの対応関係を見ることだけに使用される。
-		放射暖冷房に関する設備情報には対応する境界IDしか記されていない。
-		一方で、放射暖冷房においても、beta, f_flr の係数を計算する際には、
-		その放射暖冷房がどの室に属しているのかの情報が必要になるため、
-		Equipments を initialize する際に、あらかじめ放射暖冷房にも room_id を付与しておくこととする。
+	dict_equipments: 設備の情報が記された辞書
+	n_rm: 部屋の数
+	n_b: 境界の数
+	bs: Boundariesクラス
+
+Notes:
+
+	ここで Boundaries クラスは、境界IDと室IDとの対応関係を見ることだけに使用される。
+	放射暖冷房に関する設備情報には対応する境界IDしか記されていない。
+	一方で、放射暖冷房においても、beta, f_flr の係数を計算する際には、
+	その放射暖冷房がどの室に属しているのかの情報が必要になるため、
+	Equipments を initialize する際に、あらかじめ放射暖冷房にも room_id を付与しておくこととする。
 */
-func NewEquipments(eq map[string]interface{}, n_rm int, n_b int, bs *Boundaries) *Equipments {
-	heating_eq := eq["heating_equipments"].([]interface{})
+func NewEquipments(eq *EquipmentsJson, n_rm int, n_b int, bs *Boundaries) *Equipments {
+	heating_eq := eq.HeatingEquipments
 	hes := make([]interface{}, len(heating_eq))
 	for i, he := range heating_eq {
-		hes[i] = _create_heating_equipment(he.(map[string]interface{}), bs)
+		hes[i] = _create_heating_equipment(&he, bs)
 	}
 
-	cooling_eq := eq["cooling_equipments"].([]interface{})
+	cooling_eq := eq.CoolingEquipments
 	ces := make([]interface{}, len(cooling_eq))
 	for i, ce := range cooling_eq {
-		ces[i] = _create_cooling_equipment(ce.(map[string]interface{}), bs)
+		ces[i] = _create_cooling_equipment(&ce, bs)
 	}
 
 	return &Equipments{
@@ -131,29 +133,29 @@ func NewEquipments(eq map[string]interface{}, n_rm int, n_b int, bs *Boundaries)
 	}
 }
 
-func _create_heating_equipment(eq map[string]interface{}, bs *Boundaries) interface{} {
-	heType := eq["equipment_type"].(string)
-	id := int(eq["id"].(float64))
-	name := eq["name"].(string)
-	prop := eq["property"].(map[string]interface{})
+func _create_heating_equipment(eq *EquipmentJson, bs *Boundaries) interface{} {
+	heType := eq.EquipmentType
+	id := eq.Id
+	name := eq.Name
+	prop := eq.Property
 
 	if heType == "rac" {
 		return &HeatingEquipmentRAC{
 			EquipmentBase: EquipmentBase{
 				id:      id,
 				name:    name,
-				room_id: int(prop["space_id"].(float64)),
+				room_id: prop.SpaceId,
 			},
 			EquipmentRAC: EquipmentRAC{
-				q_min: prop["q_min"].(float64),
-				q_max: prop["q_max"].(float64),
-				v_min: prop["v_min"].(float64),
-				v_max: prop["v_max"].(float64),
-				bf:    prop["bf"].(float64),
+				q_min: prop.Qmin,
+				q_max: prop.Q_max,
+				v_min: prop.V_min,
+				v_max: prop.V_max,
+				bf:    prop.Bf,
 			},
 		}
 	} else if heType == "floor_heating" {
-		roomID := bs.get_room_id_by_boundary_id(int(prop["boundary_id"].(float64)))
+		roomID := bs.get_room_id_by_boundary_id(prop.BoundaryId)
 		return &HeatingEquipmentFloorHeating{
 			EquipmentBase: EquipmentBase{
 				id:      id,
@@ -161,10 +163,10 @@ func _create_heating_equipment(eq map[string]interface{}, bs *Boundaries) interf
 				room_id: roomID,
 			},
 			EquipmentFloor: EquipmentFloor{
-				boundary_id:      prop["boundary_id"].(int),
-				max_capacity:     prop["max_capacity"].(float64),
-				area:             prop["area"].(float64),
-				convection_ratio: prop["convection_ratio"].(float64),
+				boundary_id:      prop.BoundaryId,
+				max_capacity:     prop.MaxCapacity,
+				area:             prop.Area,
+				convection_ratio: prop.ConvectionRatio,
 			},
 		}
 	} else {
@@ -172,29 +174,29 @@ func _create_heating_equipment(eq map[string]interface{}, bs *Boundaries) interf
 	}
 }
 
-func _create_cooling_equipment(eq map[string]interface{}, bs *Boundaries) interface{} {
-	ceType := eq["equipment_type"].(string)
-	id := int(eq["id"].(float64))
-	name := eq["name"].(string)
-	prop := eq["property"].(map[string]interface{})
+func _create_cooling_equipment(eq *EquipmentJson, bs *Boundaries) interface{} {
+	ceType := eq.EquipmentType
+	id := eq.Id
+	name := eq.Name
+	prop := eq.Property
 
 	if ceType == "rac" {
 		return CoolingEquipmentRAC{
 			EquipmentBase: EquipmentBase{
 				id:      id,
 				name:    name,
-				room_id: int(prop["space_id"].(float64)),
+				room_id: prop.SpaceId,
 			},
 			EquipmentRAC: EquipmentRAC{
-				q_min: prop["q_min"].(float64),
-				q_max: prop["q_max"].(float64),
-				v_min: prop["v_min"].(float64),
-				v_max: prop["v_max"].(float64),
-				bf:    prop["bf"].(float64),
+				q_min: prop.Qmin,
+				q_max: prop.Q_max,
+				v_min: prop.V_min,
+				v_max: prop.V_max,
+				bf:    prop.Bf,
 			},
 		}
 	} else if ceType == "floor_cooling" {
-		room_id := bs.get_room_id_by_boundary_id(int(prop["boundary_id"].(float64)))
+		room_id := bs.get_room_id_by_boundary_id(prop.BoundaryId)
 		return CoolingEquipmentFloorCooling{
 			EquipmentBase: EquipmentBase{
 				id:      id,
@@ -202,10 +204,10 @@ func _create_cooling_equipment(eq map[string]interface{}, bs *Boundaries) interf
 				room_id: room_id,
 			},
 			EquipmentFloor: EquipmentFloor{
-				boundary_id:      int(prop["boundary_id"].(float64)),
-				max_capacity:     prop["max_capacity"].(float64),
-				area:             prop["area"].(float64),
-				convection_ratio: prop["convection_ratio"].(float64),
+				boundary_id:      prop.BoundaryId,
+				max_capacity:     prop.MaxCapacity,
+				area:             prop.Area,
+				convection_ratio: prop.ConvectionRatio,
 			},
 		}
 	} else {
@@ -229,10 +231,11 @@ func _get_q_rs_max_is(es []interface{}, n_rm int) []float64 {
 }
 
 /*
-	室に放射暖冷房があるか否かを判定する。
+室に放射暖冷房があるか否かを判定する。
 
-	Returns:
-		放射暖冷房の有無, [i, 1]
+Returns:
+
+	放射暖冷房の有無, [i, 1]
 */
 func _get_is_radiative_is(es []interface{}, n_rm int) []bool {
 	is_radiative_is := make([]bool, n_rm)
@@ -514,10 +517,15 @@ func (eq *Equipments) _func_rac(
 /*
 ルームエアコンディショナーの室内機の熱交換器表面の絶対湿度を求める。
 Args:
+
 	theta_rac_ex_srf_i_n_pls: ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面温度,degree C
+
 Returns:
+
 	ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面の絶対湿度, kg/kg(DA)
+
 Notes:
+
 	繰り返し計算（温度と湿度） eq.12
 */
 func _get_x_rac_ex_srf_i_n_pls(theta_rac_ex_srf_i_n_pls float64) float64 {
@@ -525,16 +533,21 @@ func _get_x_rac_ex_srf_i_n_pls(theta_rac_ex_srf_i_n_pls float64) float64 {
 }
 
 /*
-	ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面温度を計算する。
-	Args:
-		bf_rac_i: 室 i に設置されたルームエアコンディショナーの室内機の熱交換器のバイパスファクター, -
-		q_s_i_n: ステップ n から n+1 における室 i の顕熱負荷, W
-		theta_r_i_n_pls: ステップ n+1 における室 i の温度, degree C
-		v_rac_i_n: ステップ n から n+1 における室 i に設置されたルームエアコンディショナーの吹き出し風量, m3/s
-	Returns:
-		ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面温度, degree C
-	Notes:
-		繰り返し計算（温度と湿度） eq.14
+ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面温度を計算する。
+Args:
+
+	bf_rac_i: 室 i に設置されたルームエアコンディショナーの室内機の熱交換器のバイパスファクター, -
+	q_s_i_n: ステップ n から n+1 における室 i の顕熱負荷, W
+	theta_r_i_n_pls: ステップ n+1 における室 i の温度, degree C
+	v_rac_i_n: ステップ n から n+1 における室 i に設置されたルームエアコンディショナーの吹き出し風量, m3/s
+
+Returns:
+
+	ステップ n+1 における室 i に設置されたルームエアコンディショナーの室内機の熱交換器表面温度, degree C
+
+Notes:
+
+	繰り返し計算（温度と湿度） eq.14
 */
 func _get_theta_rac_ex_srf_i_n_pls(
 	bf_rac_i float64,
@@ -546,18 +559,23 @@ func _get_theta_rac_ex_srf_i_n_pls(
 }
 
 /*
-	ルームエアコンディショナーの吹き出し風量を顕熱負荷に応じて計算する。
+ルームエアコンディショナーの吹き出し風量を顕熱負荷に応じて計算する。
 
-	Args:
-		q_rac_max_i: 室 i に設置されたルームエアコンディショナーの最大能力, W
-		q_rac_min_i: 室 i に設置されたルームエアコンディショナーの最小能力, W
-		q_s_i_n:　ステップ n からステップ n+1 における室 i の顕熱負荷, W
-		v_rac_max_i: 室 i に設置されたルームエアコンディショナーの最小能力時における風量, m3/s
-		v_rac_min_i: 室 i に設置されたルームエアコンディショナーの最大能力時における風量, m3/s
-	Returns:
-		室iに設置されたルームエアコンディショナーの吹き出し風量, m3/s
-	Notes:
-		繰り返し計算（湿度と潜熱） eq.14
+Args:
+
+	q_rac_max_i: 室 i に設置されたルームエアコンディショナーの最大能力, W
+	q_rac_min_i: 室 i に設置されたルームエアコンディショナーの最小能力, W
+	q_s_i_n:　ステップ n からステップ n+1 における室 i の顕熱負荷, W
+	v_rac_max_i: 室 i に設置されたルームエアコンディショナーの最小能力時における風量, m3/s
+	v_rac_min_i: 室 i に設置されたルームエアコンディショナーの最大能力時における風量, m3/s
+
+Returns:
+
+	室iに設置されたルームエアコンディショナーの吹き出し風量, m3/s
+
+Notes:
+
+	繰り返し計算（湿度と潜熱） eq.14
 */
 func _get_vac_rac_i_n(
 	q_rac_max_i float64,

@@ -38,16 +38,18 @@ type SolarShading interface {
 入力ファイルの辞書の"solar_shading_part"を読み込む。
 
 Args:
+
 	ssp_dict: 日除けの仕様に関する辞書
 	direction: 方位
 
 Returns:
+
 	SolarShadingPart クラス
 */
-func NewSolarShading(ssp_dict map[string]interface{}, direction Direction) SolarShading {
-	if ssp_dict["existence"].(bool) {
+func NewSolarShading(ssp_dict *SolarShadingPartJson, direction Direction) SolarShading {
+	if ssp_dict.Existence {
 
-		input_method := ssp_dict["input_method"].(string)
+		input_method := ssp_dict.InputMethod
 
 		if direction == DirectionTop || direction == DirectionBottom {
 			panic("方位が「上方」「下方」の場合に日除けを定義することはできません。")
@@ -59,23 +61,23 @@ func NewSolarShading(ssp_dict map[string]interface{}, direction Direction) Solar
 		if input_method == "simple" {
 			return NewSolarShadingSimple(
 				alpha_w_j,
-				ssp_dict["depth"].(float64),
-				ssp_dict["d_h"].(float64),
-				ssp_dict["d_e"].(float64),
+				ssp_dict.Depth,
+				ssp_dict.D_h,
+				ssp_dict.D_e,
 			)
 		} else if input_method == "detail" {
 			return NewSolarShadingDetail(
 				alpha_w_j,
-				ssp_dict["x1"].(float64),
-				ssp_dict["x2"].(float64),
-				ssp_dict["x3"].(float64),
-				ssp_dict["y1"].(float64),
-				ssp_dict["y2"].(float64),
-				ssp_dict["y3"].(float64),
-				ssp_dict["z_x_pls"].(float64),
-				ssp_dict["z_x_mns"].(float64),
-				ssp_dict["z_y_pls"].(float64),
-				ssp_dict["z_y_mns"].(float64),
+				ssp_dict.X1,
+				ssp_dict.X2,
+				ssp_dict.X3,
+				ssp_dict.Y1,
+				ssp_dict.Y2,
+				ssp_dict.Y3,
+				ssp_dict.Z_x_pls,
+				ssp_dict.Z_x_mns,
+				ssp_dict.Z_y_pls,
+				ssp_dict.Z_y_mns,
 			)
 		} else {
 			panic(input_method)
@@ -93,8 +95,8 @@ type SolarShadingSimple struct {
 }
 
 /*
-
 Args:
+
 	alpha_w_j: 開口部 j の方位角, rad
 	l_z_j: 開口部 j のひさしの出幅, m
 	l_y_h_j: 開口部 j の高さ, m
@@ -109,16 +111,20 @@ func NewSolarShadingSimple(alpha_w_j float64, l_z_j float64, l_y_h_j float64, l_
 	}
 }
 
-/*無限に長い庇がある場合の直達日射に対する日よけの日影面積比率を計算する。
+/*
+無限に長い庇がある場合の直達日射に対する日よけの日影面積比率を計算する。
 
 Args:
+
 	h_sun_n: ステップ n における太陽高度, rad, [N+1]
 	a_sun_n: ステップ n における太陽方位角, rad, [N+1]
 
 Returns:
+
 	ステップ n における直達日射に対する日除けの日影面積比率, [N+1]
 
 Notes:
+
 	日射が壁にあたらない場合は日影そのものができない。
 	その場合は値として 0.0 を返す。
 */
@@ -169,6 +175,7 @@ func (self *SolarShadingSimple) get_f_ss_dn_j_ns(h_sun_n, a_sun_n []float64) []f
 無限に長い庇がある場合の天空放射に対する日よけの影面積比率を計算する。
 
 Returns:
+
 	天空放射に対する日除けの影面積比率, -
 */
 func (self *SolarShadingSimple) get_f_ss_sky_j() float64 {
@@ -181,6 +188,7 @@ func (self *SolarShadingSimple) get_f_ss_sky_j() float64 {
 /*
 地面反射に対する日よけの影面積比率を計算する。
 Returns:
+
 	地面反射に対する日よけの影面積比率
 */
 func (self *SolarShadingSimple) get_f_ss_ref_j() float64 {
@@ -221,10 +229,12 @@ func NewSolarShadingDetail(alpha_w_j, x1, x2, x3, y1, y2, y3, z_x_pls, z_x_mns, 
 直達日射に対する日よけの影面積比率を計算する。
 
 Args:
+
 	h_sun_n: 太陽高度, rad, [N+1]
 	a_sun_n: 太陽方位角, rad, [N+1]
 
 Returns:
+
 	直達日射に対する日除けの影面積比率, [N+1]
 */
 func (self *SolarShadingDetail) get_f_ss_dn_j_ns(h_sun_n, a_sun_n []float64) []float64 {
@@ -235,6 +245,7 @@ func (self *SolarShadingDetail) get_f_ss_dn_j_ns(h_sun_n, a_sun_n []float64) []f
 天空放射に対する日よけの影面積比率を計算する。
 
 Returns:
+
 	天空放射に対する日除けの影面積比率, -
 */
 func (self *SolarShadingDetail) get_f_ss_sky_j() float64 {
@@ -244,6 +255,7 @@ func (self *SolarShadingDetail) get_f_ss_sky_j() float64 {
 /*
 地面反射に対する日よけの影面積比率を計算する。
 Returns:
+
 	地面反射に対する日よけの影面積比率
 */
 func (self *SolarShadingDetail) get_f_ss_ref_j() float64 {
@@ -261,10 +273,12 @@ func NewSolarShadingNot() *SolarShadingNot {
 直達日射に対する日よけの影面積比率を計算する。
 
 Args:
+
 	h_sun_n: 太陽高度, rad, [N+1]
 	a_sun_n: 太陽方位角, rad, [N+1]
 
 Returns:
+
 	直達日射に対する日除けの影面積比率, [N+1]
 */
 func (self *SolarShadingNot) get_f_ss_dn_j_ns(h_sun_n []float64, a_sun_n []float64) []float64 {
@@ -275,6 +289,7 @@ func (self *SolarShadingNot) get_f_ss_dn_j_ns(h_sun_n []float64, a_sun_n []float
 天空放射に対する日よけの影面積比率を計算する。
 
 Returns:
+
 	天空放射に対する日除けの影面積比率, -
 */
 func (self *SolarShadingNot) get_f_ss_sky_j() float64 {
@@ -284,6 +299,7 @@ func (self *SolarShadingNot) get_f_ss_sky_j() float64 {
 /*
 地面反射に対する日よけの影面積比率を計算する。
 Returns:
+
 	地面反射に対する日よけの影面積比率
 */
 func (self *SolarShadingNot) get_f_ss_ref_j() float64 {

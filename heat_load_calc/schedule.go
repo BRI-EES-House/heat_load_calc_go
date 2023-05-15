@@ -41,8 +41,8 @@ type Schedule struct {
 }
 
 /*
-
 Args:
+
 	q_gen_is_ns: ステップ　n　の室　i　における内部発熱, W, [i, n]
 	x_gen_is_ns: ステップ　n　の室　i　における人体発湿を除く内部発湿, kg/s, [i, n]
 	v_mec_vent_local_is_ns: ステップ　n　の室　i　における局所換気量, m3/s, [i, n]
@@ -68,14 +68,17 @@ func NewSchedule(
 	}
 }
 
-/*Schedule クラスを生成する。
+/*
+Schedule クラスを生成する。
 
 Args:
+
 	number_of_occupants: 居住人数の指定方法
 	s_name_is: 室 i のスケジュールの名称, [i]
 	a_floor_is: 室 i の床面積, m2, [i]
 
 Returns:
+
 	Schedule クラス
 */
 func get_schedule(number_of_occupants NumberOfOccupants, s_name_is []string, a_floor_is []float64) *Schedule {
@@ -144,9 +147,11 @@ func get_schedule(number_of_occupants NumberOfOccupants, s_name_is []string, a_f
 	)
 }
 
-/*365日分のカレンダーを取得する。
+/*
+365日分のカレンダーを取得する。
 
 Returns:
+
 	365日分のカレンダー
 */
 func _load_calendar() []string {
@@ -234,6 +239,7 @@ func _get_schedules(
 /*
 スケジュールを取得する。
 Args:
+
 	schedule_name_i: 室 i のスケジュールの名称
 	noo: 居住人数の指定方法（NumberOfOccupants 列挙体）
 	n_p: 居住人数
@@ -253,7 +259,9 @@ Args:
 	is_zero_one: 数字データの意味をゼロ・イチの意味に読み替えるかどうか
 		例：　[0, 3, 5, 7, 0] -> [0, 1, 1, 1, 0]
 		ac_demand に適用されることを想定している
+
 Returns:
+
 	スケジュール, [365*96]
 */
 func _get_schedule(
@@ -328,6 +336,7 @@ func _get_schedule(
 /*
 世帯人数で線形補間してリストを返す
 Args:
+
 	daily_schedule: スケジュール
 		Keyは必ず"1", "2", "3", "4"
 		Valueは96個のリスト形式の値（15分インターバル）
@@ -353,7 +362,9 @@ Args:
 	is_zero_one: 数字データの意味をゼロ・イチの意味に読み替えるかどうか
 		例：　[0, 3, 5, 7, 0] -> [0, 1, 1, 1, 0]
 		ac_demand に適用されることを想定している
+
 Returns:
+
 	線形補間したリスト, [96]
 */
 func _get_interpolated_schedule(
@@ -429,17 +440,21 @@ func convert_to_zero_one(scd []float64) []float64 {
 	return data
 }
 
-/*世帯人数から切り上げ・切り下げた人数を整数値で返す
+/*
+世帯人数から切り上げ・切り下げた人数を整数値で返す
 
 Args:
+
 	n_p: 世帯人数
 
 Returns:
+
 	タプル：
 		切り上げた世帯人数
 		切り下げた世帯人数
 
 Notes:
+
 	1人未満、4人より大の人数を指定した場合はエラーを返す。
 */
 func _get_ceil_floor_np(n_p float64) (int, int) {
@@ -464,10 +479,12 @@ func _get_ceil_floor_np(n_p float64) (int, int) {
 /*
 床面積の合計から居住人数を計算する。
 Args:
+
 	noo: 居住人数の指定方法
 	a_floor_is: 室 i の床面積, m2, [i]
 
 Returns:
+
 	居住人数
 */
 func _get_n_p(noo NumberOfOccupants, a_floor_is []float64) float64 {

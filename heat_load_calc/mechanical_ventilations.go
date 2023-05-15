@@ -29,23 +29,15 @@ type MechanicalVentilations struct {
 	v_vent_mec_general_is    []float64                // 室ごとの機械換気量, m3/h
 }
 
-func NewMechanicalVentilations(vs []interface{}, n_rm int) *MechanicalVentilations {
-	to_int_array := func(a []interface{}) []int {
-		b := make([]int, len(a))
-		for i := range a {
-			b[i] = int(a[i].(float64))
-		}
-		return b
-	}
-
+func NewMechanicalVentilations(vs []MechanicalVentilationJson, n_rm int) *MechanicalVentilations {
 	mvs := &MechanicalVentilations{_n_rm: n_rm}
 	for i := range vs {
-		input := vs[i].(map[string]interface{})
+		input := &vs[i]
 		mv := &MechanicalVentilation{
-			id:        int(input["id"].(float64)),                   // ID
-			root_type: VentilationType(input["root_type"].(string)), // 換気経路のタイプ
-			volume:    input["volume"].(float64),                    // 換気量, m3/h
-			root:      to_int_array(input["root"].([]interface{})),  // 換気のルート
+			id:        int(input.Id),                   // ID
+			root_type: VentilationType(input.RootType), // 換気経路のタイプ
+			volume:    input.Volume,                    // 換気量, m3/h
+			root:      input.Root,                      // 換気のルート
 		}
 		mvs._mechanical_ventilations = append(mvs._mechanical_ventilations, mv)
 	}
@@ -57,13 +49,15 @@ func NewMechanicalVentilations(vs []interface{}, n_rm int) *MechanicalVentilatio
 }
 
 /*
-	Calculate the mechanical ventilation (general) of room i.
+Calculate the mechanical ventilation (general) of room i.
 
-	Returns:
-		mechanical ventilation (general) of room i, m3/s
+Returns:
 
-	Note:
-		eq. 1
+	mechanical ventilation (general) of room i, m3/s
+
+Note:
+
+	eq. 1
 */
 func (mvs *MechanicalVentilations) get_v_vent_mec_general_is() []float64 {
 	v1 := make([]float64, mvs._n_rm)
@@ -92,10 +86,11 @@ func (mvs *MechanicalVentilations) get_v_vent_mec_general_is() []float64 {
 }
 
 /*
-	Calculate the tamount of the air moved from the room i* to the room i.
+Calculate the tamount of the air moved from the room i* to the room i.
 
-	Returns:
-		the amount of the air moved from the room i* to tohe room i, [i, i], m3/s
+Returns:
+
+	the amount of the air moved from the room i* to tohe room i, [i, i], m3/s
 */
 func (mvs *MechanicalVentilations) get_v_vent_int_is_is() *mat.Dense {
 	v2 := mat.NewDense(mvs._n_rm, mvs._n_rm, nil)
