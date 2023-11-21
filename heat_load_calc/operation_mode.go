@@ -126,7 +126,7 @@ func make_operation(
 		for j := 0; j < c; j++ {
 			for i := 0; i < r; i++ {
 				batch := ac_setting_is_ns.Get(j)
-				if int(batch[i]) == mode {
+				if int(batch.AtVec(i)) == mode {
 					lower_target_is_ns_data[off] = lower
 					upper_target_is_ns_data[off] = upper
 				}
@@ -190,7 +190,7 @@ func (self *Operation) get_operation_mode_is_n(
 	theta_mrt_hum_ntr_nv_is_n_pls []float64,
 	x_r_ntr_non_nv_is_n_pls []float64,
 	x_r_ntr_nv_is_n_pls []float64,
-) []OperationMode {
+) ([]OperationMode, bool) {
 
 	upper_target_is_n := self._upper_target_is_ns.Get(nn)
 	lower_target_is_n := self._lower_target_is_ns.Get(nn)
@@ -222,16 +222,19 @@ func (self *Operation) get_operation_mode_is_n(
 		panic("invalid ac method")
 	}
 
+	all_stop := true
 	v := make([]OperationMode, self._n_rm)
 	for i := 0; i < self._n_rm; i++ {
-		is_op := ac_demand_is_n[i] > 0.0
+		is_op := ac_demand_is_n.AtVec(i) > 0.0
 		if is_op {
-			if x_cooling_is_n_pls[i] > upper_target_is_n[i] && x_window_open_is_n_pls[i] > upper_target_is_n[i] {
+			if x_cooling_is_n_pls[i] > upper_target_is_n.AtVec(i) && x_window_open_is_n_pls[i] > upper_target_is_n.AtVec(i) {
 				v[i] = COOLING
-			} else if x_cooling_is_n_pls[i] > upper_target_is_n[i] && x_window_open_is_n_pls[i] <= upper_target_is_n[i] {
+				all_stop = false
+			} else if x_cooling_is_n_pls[i] > upper_target_is_n.AtVec(i) && x_window_open_is_n_pls[i] <= upper_target_is_n.AtVec(i) {
 				v[i] = STOP_OPEN
-			} else if x_heating_is_n_pls[i] < lower_target_is_n[i] {
+			} else if x_heating_is_n_pls[i] < lower_target_is_n.AtVec(i) {
 				v[i] = HEATING
+				all_stop = false
 			} else {
 				v[i] = STOP_CLOSE
 			}
@@ -240,7 +243,7 @@ func (self *Operation) get_operation_mode_is_n(
 		}
 	}
 
-	return v
+	return v, all_stop
 }
 
 func (self *Operation) get_theta_target_is_n(
@@ -253,7 +256,7 @@ func (self *Operation) get_theta_target_is_n(
 	is_radiative_heating_is []bool,
 	is_radiative_cooling_is []bool,
 	met_is []float64,
-) ([]float64, []float64, []float64, []float64) {
+) (*mat.VecDense, *mat.VecDense, []float64, []float64) {
 	lower_target_is_n := self._lower_target_is_ns.Get(nn)
 	upper_target_is_n := self._upper_target_is_ns.Get(nn)
 
@@ -310,7 +313,7 @@ Returns:
 	ステップ n における室 i の人体表面の対流熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 	ステップ n における室 i の人体表面の放射熱伝達率が総合熱伝達率に占める割合, -, [i, 1]
 */
-func (o *Operation) get_k_is() (mat.Vector, mat.Vector) {
+func (o *Operation) get_k_is() (*mat.VecDense, *mat.VecDense) {
 	k_c_is := mat.NewVecDense(o._n_rm, nil)
 	k_r_is := mat.NewVecDense(o._n_rm, nil)
 	switch o.ac_method() {
@@ -377,16 +380,16 @@ func _get_theta_target(
 	operation_mode_is_n []OperationMode,
 	p_v_r_is_n []float64,
 	met_is []float64,
-	lower_target_is_n []float64,
-	upper_target_is_n []float64,
+	lower_target_is_n mat.Vector,
+	upper_target_is_n mat.Vector,
 	h_hum_is_n []float64,
 	clo_is_n []float64,
 ) (
-	[]float64,
-	[]float64,
+	*mat.VecDense,
+	*mat.VecDense,
 ) {
-	theta_lower_target_is_n := make([]float64, len(operation_mode_is_n))
-	theta_upper_target_is_n := make([]float64, len(operation_mode_is_n))
+	theta_lower_target_is_n := mat.NewVecDense(len(operation_mode_is_n), nil)
+	theta_upper_target_is_n := mat.NewVecDense(len(operation_mode_is_n), nil)
 	for i, om := range operation_mode_is_n {
 		if om == HEATING {
 			v := get_theta_ot_target(
@@ -394,18 +397,18 @@ func _get_theta_target(
 				p_v_r_is_n[i],
 				h_hum_is_n[i],
 				met_is[i],
-				lower_target_is_n[i],
+				lower_target_is_n.AtVec(i),
 			)
-			theta_lower_target_is_n[i] = v
+			theta_lower_target_is_n.SetVec(i, v)
 		} else if om == COOLING {
 			v := get_theta_ot_target(
 				clo_is_n[i],
 				p_v_r_is_n[i],
 				h_hum_is_n[i],
 				met_is[i],
-				lower_target_is_n[i],
+				lower_target_is_n.AtVec(i),
 			)
-			theta_upper_target_is_n[i] = v
+			theta_upper_target_is_n.SetVec(i, v)
 		} else {
 			//PASS
 		}

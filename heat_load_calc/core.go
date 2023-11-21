@@ -70,9 +70,9 @@ func calc(
 	c_n := initialize_conditions(sqc.rms.n_rm, sqc.bs.n_b)
 
 	// 地盤計算の結果（項別公比法の指数項mの吸熱応答の項別成分・表面熱流）を建物の計算に引き継ぐ
-	c_n = update_conditions_by_ground_conditions(sqc.bs.is_ground_js, c_n, gc_n)
+	update_conditions_by_ground_conditions(sqc.bs.is_ground_js, c_n, gc_n)
 
-	log.Println("助走計算（建物全体）")
+	log.Printf("助走計算（建物全体） (%d steps)\n", n_step_run_up_build)
 
 	N_plus := N + 1
 	nn = N - n_step_run_up_build
@@ -82,7 +82,7 @@ func calc(
 		nn++
 	}
 
-	log.Println("本計算")
+	log.Printf("本計算 (%d steps)\n", n_step_main)
 
 	m := 1
 	for n := 0; n < n_step_main; n++ {

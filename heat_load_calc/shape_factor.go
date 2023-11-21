@@ -1,5 +1,8 @@
 package main
 
+// ***** 室内の境界の形態係数および放射熱伝達率 *****
+// See: https://hc-energy.readthedocs.io/ja/latest/contents/03_14_eval_shape_factor.html
+
 import (
 	"fmt"
 	"log"
@@ -43,6 +46,12 @@ func get_f_mrt_is_js(a_s_js, h_s_r_js mat.Vector, p_is_js mat.Matrix) *mat.Dense
 	return &term1
 }
 
+/*
+室iに接する境界jの放射熱伝達率を求める
+
+Notes:
+	式(2)
+*/
 func get_h_s_r_js(id_rm_is []int, a_s_js *mat.VecDense, connected_room_id_js []int) []float64 {
 	h_s_r_js := make([]float64, a_s_js.Len())
 

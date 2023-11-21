@@ -108,33 +108,33 @@ type Boundary struct {
 }
 
 type Boundaries struct {
-	bss                   []*Boundary // 境界
-	p_is_js               *mat.Dense  // 室iと境界jの関係を表す係数（境界jから室iへの変換）, [i, j]
-	q_trs_sol_is_ns       mat.Matrix  // ステップ n の室 i における窓の透過日射熱取得, W, [n]
-	n_b                   int         // 境界の数
-	n_ground              int         // 地盤の数
-	id_bs_js              []int       // ID
-	name_js               []string    // 名前, [j, 1]
-	sub_name_js           []string    // 名前2, [j, 1]
-	p_is_is               mat.Matrix  // 室iと境界jの関係を表す係数（境界jから室iへの変換）
-	p_js_is               mat.Matrix  // 室iと境界jの関係を表す係数（室iから境界jへの変換）
-	is_floor_js           []bool      // 床かどうか, [j, 1]
-	is_ground_js          []bool      // 地盤かどうか, [j, 1]
-	k_ei_js_js            mat.Matrix  // 境界jの裏面温度に他の境界の等価室温が与える影響, [j, j]
-	k_eo_js               mat.Vector  // 温度差係数
-	k_s_r_js              mat.Matrix  // 境界 j の裏面温度に室温が与える影響, [j, i]
-	p_s_sol_abs_js        mat.Vector  // 境界jの日射吸収の有無, [j, 1]
-	h_s_r_js              mat.Vector  // 境界jの室内側表面放射熱伝達率, W/m2K, [j, 1]
-	h_s_c_js              mat.Vector  // 境界jの室内側表面対流熱伝達率, W/m2K, [j, 1]
-	simulation_u_value_js mat.Vector  // 境界jの計算で使用する熱貫流率, W/m2K, [j, 1]
-	a_s_js                mat.Vector  // 境界jの面積, m2, [j, 1]
-	phi_a0_js             mat.Vector  // 境界jの吸熱応答係数の初項, m2K/W, [j, 1]
-	phi_a1_js_ms          [][]float64 // 境界jの項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [j, 12]
-	phi_t0_js             mat.Vector  // 境界jの貫流応答係数の初項, [j, 1]
-	phi_t1_js_ms          [][]float64 // 境界jの項別公比法における項mの貫流応答係数の第一項, [j, 12]
-	r_js_ms               [][]float64 // 境界jの項別公比法における項mの公比, [j, 12]
-	theta_o_eqv_js_ns     *mat.Dense  // ステップ n の境界 j における相当外気温度, ℃, [j, n+1]
-	q_trs_sol_js_ns       mat.Matrix  // ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	bss                   []*Boundary   // 境界
+	p_is_js               *mat.Dense    // 室iと境界jの関係を表す係数（境界jから室iへの変換）, [i, j]
+	q_trs_sol_is_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	n_b                   int           // 境界の数
+	n_ground              int           // 地盤の数
+	id_bs_js              []int         // ID
+	name_js               []string      // 名前, [j, 1]
+	sub_name_js           []string      // 名前2, [j, 1]
+	p_is_is               *mat.Dense    // 室iと境界jの関係を表す係数（境界jから室iへの変換）
+	p_js_is               *mat.Dense    // 室iと境界jの関係を表す係数（室iから境界jへの変換）
+	is_floor_js           []bool        // 床かどうか, [j, 1]
+	is_ground_js          []bool        // 地盤かどうか, [j, 1]
+	k_ei_js_js            *mat.Dense    // 境界jの裏面温度に他の境界の等価室温が与える影響, [j, j]
+	k_eo_js               *mat.VecDense // 温度差係数
+	k_s_r_js              *mat.Dense    // 境界 j の裏面温度に室温が与える影響, [j, i]
+	p_s_sol_abs_js        *mat.VecDense // 境界jの日射吸収の有無, [j, 1]
+	h_s_r_js              *mat.VecDense // 境界jの室内側表面放射熱伝達率, W/m2K, [j, 1]
+	h_s_c_js              *mat.VecDense // 境界jの室内側表面対流熱伝達率, W/m2K, [j, 1]
+	simulation_u_value_js *mat.VecDense // 境界jの計算で使用する熱貫流率, W/m2K, [j, 1]
+	a_s_js                *mat.VecDense // 境界jの面積, m2, [j, 1]
+	phi_a0_js             *mat.VecDense // 境界jの吸熱応答係数の初項, m2K/W, [j, 1]
+	phi_a1_js_ms          *mat.Dense    // 境界jの項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [j, 12]
+	phi_t0_js             *mat.VecDense // 境界jの貫流応答係数の初項, [j, 1]
+	phi_t1_js_ms          *mat.Dense    // 境界jの項別公比法における項mの貫流応答係数の第一項, [j, 12]
+	r_js_ms               *mat.Dense    // 境界jの項別公比法における項mの公比, [j, 12]
+	theta_o_eqv_js_ns     *mat.Dense    // ステップ n の境界 j における相当外気温度, ℃, [j, n+1]
+	q_trs_sol_js_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [n]
 }
 
 /*
@@ -232,7 +232,9 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	bs.p_is_js = p_is_js
 
 	// 室iと境界jの関係を表す係数（室iから境界jへの変換）
-	bs.p_js_is = p_is_js.T()
+	var p_js_is mat.Dense
+	p_js_is.CloneFrom(p_is_js.T()) // 単純にT()を使うと、パフォーマンス上の問題があるのでDense型にする
+	bs.p_js_is = &p_js_is
 
 	// 床かどうか, [j, 1]
 	is_floor_js := make([]bool, len(self.bss))
@@ -317,10 +319,9 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	bs.phi_a0_js = mat.NewVecDense(len(rfa0), rfa0)
 
 	// 境界jの項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [j, 12]
-	rfa1 := make([][]float64, self.n_b)
+	rfa1 := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
-		rfa1[i] = make([]float64, 12)
-		copy(rfa1[i], self.bss[i].rf.rfa1)
+		rfa1.SetRow(i, self.bss[i].rf.rfa1)
 	}
 	bs.phi_a1_js_ms = rfa1
 
@@ -332,18 +333,16 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	bs.phi_t0_js = mat.NewVecDense(len(rft0), rft0)
 
 	// 境界jの項別公比法における項mの貫流応答係数の第一項, [j, 12]
-	rft1 := make([][]float64, self.n_b)
+	rft1 := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
-		rft1[i] = make([]float64, 12)
-		copy(rft1[i], self.bss[i].rf.rft1)
+		rft1.SetRow(i, self.bss[i].rf.rft1)
 	}
 	bs.phi_t1_js_ms = rft1
 
 	// 境界jの項別公比法における項mの公比, [j, 12]
-	row := make([][]float64, self.n_b)
+	row := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
-		row[i] = make([]float64, 12)
-		copy(row[i], self.bss[i].rf.row)
+		row.SetRow(i, self.bss[i].rf.row)
 	}
 	bs.r_js_ms = row
 

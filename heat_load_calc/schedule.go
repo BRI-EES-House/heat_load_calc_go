@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"gonum.org/v1/gonum/floats"
+	"gonum.org/v1/gonum/mat"
 )
 
 /*
@@ -129,7 +130,7 @@ func get_schedule(number_of_occupants NumberOfOccupants, s_name_is []string, a_f
 		_q_gen_ckg_is_ns := q_gen_ckg_is_ns.Get(j)
 		_q_gen_lght_is_ns := q_gen_lght_is_ns.Get(j)
 		for i := 0; i < n_rm; i++ {
-			q_gen_is_ns[off] = _q_gen_app_is_ns[i] + _q_gen_ckg_is_ns[i] + _q_gen_lght_is_ns[i]*a_floor_is[i]
+			q_gen_is_ns[off] = _q_gen_app_is_ns.AtVec(i) + _q_gen_ckg_is_ns.AtVec(i) + _q_gen_lght_is_ns.AtVec(i)*a_floor_is[i]
 			off++
 		}
 	}
@@ -190,8 +191,8 @@ type ScheduleData struct {
 	BatchSize int
 }
 
-func (self *ScheduleData) Get(i int) []float64 {
-	return self.Data[i*self.BatchSize : (i+1)*self.BatchSize]
+func (self *ScheduleData) Get(i int) *mat.VecDense {
+	return mat.NewVecDense(self.BatchSize, self.Data[i*self.BatchSize:(i+1)*self.BatchSize])
 }
 
 func (self *ScheduleData) Len() int {

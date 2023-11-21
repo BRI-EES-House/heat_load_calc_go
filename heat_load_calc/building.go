@@ -1,10 +1,12 @@
 package main
 
+// **** 建物全般のパラメータ ****
+// https://hc-energy.readthedocs.io/ja/latest/contents/03_10_eval_building.html
+
 import (
 	"math"
 
-	"gonum.org/v1/gonum/floats"
-	"gonum.org/v1/gonum/stat"
+	"gonum.org/v1/gonum/mat"
 )
 
 // 建物の階数（共同住宅の場合は住戸の階数）
@@ -139,23 +141,48 @@ func CreateBuilding(d *BuildingJson) *Building {
 }
 
 /*
-Calculate the leakage air volume
-This calculation is approx. expression based on the elaborate results obtained by solving for pressure balance
-Args:
+	C値を求める。
+	Args:
+		ua_value: UA値, W/m2 K
+		struct: 構造
+	Returns:
+		C値, cm2/m2
+	Notes:
+		式(1)
+*/
+func _estimate_c_value(uaValue float64, structure Structure) float64 {
+	a := map[Structure]float64{
+		StructureRC:     4.16, // RC造
+		StructureSRC:    4.16, // SRC造
+		StructureWooden: 8.28, // 木造
+		StructureSteel:  8.28, // 鉄骨造
+	}[structure]
 
-	theta_r_is_n: room temperature of room i in step n, degree C, [i,1]
-	theta_o_n: outdoor temperature at step n, degree C
-	v_room_is: room volume of room i, m3, [i,1]
+	return a * uaValue
+}
 
-Returns:
+var __v_leak_is_n mat.VecDense
 
-	leakage air volume of rooms at step n, m3/s, [i,1]
+/*
+	室iのすきま風量を求める。
+
+	Args:
+
+		theta_r_is_n: ステップnにおける室iの温度, degree C, [i,1]
+		theta_o_n: ステップnにおける外気温, degree C
+		v_rm_is: 室iの容積, m3, [i,1]
+
+	Returns:
+		ステップnにおける室iのすきま風量, m3/s, [i,1]
+
+	Notes:
+		式(2)
 */
 func (self *Building) get_v_leak_is_n(
-	theta_r_is_n []float64,
+	theta_r_is_n *mat.VecDense,
 	theta_o_n float64,
-	v_rm_is []float64,
-) []float64 {
+	v_rm_is *mat.VecDense,
+) *mat.VecDense {
 
 	// average air temperature at step n which is weghted by room volumes, degree C
 	theta_average_r_n := _get_theta_average_r_n(theta_r_is_n, v_rm_is)
@@ -172,64 +199,25 @@ func (self *Building) get_v_leak_is_n(
 	)
 
 	// leakage air volume of rooms at step n, m3/s, [i, 1]
-	v_leak_is_n := _get_v_leak_is_n(n_leak_n, v_rm_is)
+	__v_leak_is_n.ScaleVec(n_leak_n/3600, v_rm_is)
 
-	return v_leak_is_n
+	return &__v_leak_is_n
 }
 
 /*
-Args
+	すきま風による住宅全体の換気回数を求める。
 
-	ua_value: UA値, W/m2 K
-	struct: 構造
-
-Returns:
-
-	C値, cm2/m2
-*/
-func _estimate_c_value(uaValue float64, structure Structure) float64 {
-	a := map[Structure]float64{
-		StructureRC:     4.16, // RC造
-		StructureSRC:    4.16, // SRC造
-		StructureWooden: 8.28, // 木造
-		StructureSteel:  8.28, // 鉄骨造
-	}[structure]
-
-	return a * uaValue
-}
-
-/*
-		calculate leakage air volume of rooms at step n
-	    Args:
-	        n_leak_n: ventilation rate of air leakage at step n, 1/h
-	        v_rm_is: room volume of rooms, m3, [i, 1]
-	    Returns:
-	        air leakage volume of rooms at step n, m3/s, [i, 1]
-	    Note:
-	        eq.2
-*/
-func _get_v_leak_is_n(n_leak_n float64, v_rm_is []float64) []float64 {
-	v_leak_is_n := make([]float64, len(v_rm_is))
-
-	floats.ScaleTo(v_leak_is_n, n_leak_n/3600, v_rm_is)
-
-	return v_leak_is_n
-}
-
-/*
-		Calculate the leakage air volume
-	    This calculation is approx. expression based on the elaborate results obtained by solving for pressure balance
-	    Args:
-	        c_value: equivalent leakage area (C value), cm2/m2
-	        story: story
-	        inside_pressure: inside pressure against outdoor pressure
-	            'negative': negative pressure
-	            'positive': positive pressure
-	            'balanced': balanced
-	    Returns:
-	        air leakage volume at step n, m3/s, [i,1]
-	    Note:
-	        eq.3
+	Args:
+		c_value: 相当隙間面積(C値), cm2/m2
+		story: 建物の階数
+		inside_pressure: inside pressure against outdoor pressure
+			'negative': negative pressure
+			'positive': positive pressure
+			'balanced': balanced
+	Returns:
+		ステップnのすきま風による住宅全体の換気回数, 1/h, [i,1]
+	Note:
+		式(3)
 */
 func _get_n_leak_n(
 	c_value float64,
@@ -293,17 +281,17 @@ func _get_n_leak_n(
 }
 
 /*
-		Calculate the temperature difference between room and outdoor.
+	室内外温度差を求める。
 
-	    Args:
-	        theta_average_r_n: averate room temperature at step n, degree C
-	        theta_o_n: outdoor temperature at step n, degree C
+	Args:
+		theta_average_r_n: ステップnにおける平均室温, degree C
+		theta_o_n: ステップnにおける外気温, degree C
 
-	    Returns:
-	        temperature difference between room and outdoor at step n, K
+	Returns:
+		ステップnにおける室内外温度差, K
 
-	    Notes:
-	        eq.4
+	Notes:
+		式(4)
 */
 func _get_delta_theta_n(theta_average_r_n float64, theta_o_n float64) float64 {
 
@@ -313,18 +301,20 @@ func _get_delta_theta_n(theta_average_r_n float64, theta_o_n float64) float64 {
 }
 
 /*
-		Calculate the average air temperature at step n which is weghted by room volumes.
+	平均室温を求める。
 
-	    Args:
-	        theta_r_is_n: room temperature of room i in step n, degree C, [i, 1]
-	        v_rm_is: room volume of room i, m3, [i, 1]
+	Args:
+		theta_r_is_n: ステップnにおける室iの温度, degree C, [i, 1]
+		v_rm_is: 室iの容積, m3, [i,1]
 
-	    Returns:
-	        average air temperature at step n, degree C
+	Returns:
+		ステップnにおける平均室温, degree C
 
-	    Note:
-	        eq.5
+	Note:
+		式(5)
 */
-func _get_theta_average_r_n(theta_r_is_n []float64, v_rm_is []float64) float64 {
-	return stat.Mean(theta_r_is_n, v_rm_is)
+func _get_theta_average_r_n(theta_r_is_n mat.Vector, v_rm_is mat.Vector) float64 {
+	sumValues := mat.Dot(theta_r_is_n, v_rm_is)
+	sumWeights := mat.Sum(v_rm_is)
+	return sumValues / sumWeights
 }

@@ -18,19 +18,19 @@ type Room struct {
 }
 
 type Rooms struct {
-	n_rm              int        // 室の数
-	rms               []Room     // 室
-	id_rm_is          []int      // 空間のID, [i, 1]
-	name_rm_is        []string   // 室iの名前, [i, 1]
-	sub_name_rm_is    []string   // 室iの名前2, [i, 1]
-	a_f_rm_is         mat.Vector // 室iの面積, m2, [i, 1]
-	v_rm_is           []float64  // 室iの容積, m3, [i, 1]
-	c_sh_frt_is       mat.Vector // 室iの備品等の熱容量, J/K, [i, 1]
-	g_sh_frt_is       mat.Vector // 室iの空気と備品等間の熱コンダクタンス, W/K, [i, 1]
-	c_lh_frt_is       mat.Vector // 室iの備品等の湿気容量, kg/(kg/kgDA), [i, 1]
-	g_lh_frt_is       mat.Vector // 室iの空気と備品等間の湿気コンダクタンス, kg/(s (kg/kgDA)), [i, 1]
-	v_vent_ntr_set_is []float64  // 室iの自然風利用時の換気量, m3/s, [i, 1]
-	met_is            []float64  // 室iの在室者のMet値, [i, 1]
+	n_rm              int           // 室の数
+	rms               []Room        // 室
+	id_rm_is          []int         // 空間のID, [i, 1]
+	name_rm_is        []string      // 室iの名前, [i, 1]
+	sub_name_rm_is    []string      // 室iの名前2, [i, 1]
+	a_f_rm_is         *mat.VecDense // 室iの面積, m2, [i, 1]
+	v_rm_is           *mat.VecDense // 室iの容積, m3, [i, 1]
+	c_sh_frt_is       *mat.VecDense // 室iの備品等の熱容量, J/K, [i, 1]
+	g_sh_frt_is       *mat.VecDense // 室iの空気と備品等間の熱コンダクタンス, W/K, [i, 1]
+	c_lh_frt_is       *mat.VecDense // 室iの備品等の湿気容量, kg/(kg/kgDA), [i, 1]
+	g_lh_frt_is       *mat.VecDense // 室iの空気と備品等間の湿気コンダクタンス, kg/(s (kg/kgDA)), [i, 1]
+	v_vent_ntr_set_is []float64     // 室iの自然風利用時の換気量, m3/s, [i, 1]
+	met_is            []float64     // 室iの在室者のMet値, [i, 1]
 }
 
 func NewRooms(ds []RoomJson) (*Rooms, error) {
@@ -74,7 +74,7 @@ func NewRooms(ds []RoomJson) (*Rooms, error) {
 		name_rm_is:        name_rm_is,
 		sub_name_rm_is:    sub_name_rm_is,
 		a_f_rm_is:         mat.NewVecDense(n_rm, floor_area_rm_is),
-		v_rm_is:           v_rm_is,
+		v_rm_is:           mat.NewVecDense(n_rm, v_rm_is),
 		c_sh_frt_is:       mat.NewVecDense(n_rm, c_sh_frt_rm_is),
 		g_sh_frt_is:       mat.NewVecDense(n_rm, g_sh_frt_rm_is),
 		c_lh_frt_is:       mat.NewVecDense(n_rm, c_lh_frt_rm_is),

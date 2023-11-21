@@ -176,6 +176,7 @@ func run(
 ) {
 	// interval currently fixed at 15 minutes
 	//itv := 15
+	log.SetFlags(log.Lmicroseconds)
 
 	// ---- 事前準備 ----
 

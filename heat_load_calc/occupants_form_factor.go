@@ -1,5 +1,8 @@
 package main
 
+// ***** 在室者の形態係数 *****
+// See: https://hc-energy.readthedocs.io/ja/latest/contents/03_25_eval_occupants_form_factor.html
+
 import (
 	"gonum.org/v1/gonum/mat"
 )
@@ -40,8 +43,12 @@ func get_f_mrt_hum_js(p_is_js *mat.Dense, a_s_js mat.Vector, is_floor_js []bool)
 	for i := 0; i < r; i++ {
 		_p_is_js := p_is_js.RawRowView(i)
 		for j := 0; j < c; j++ {
-			v1 := _p_is_js[j] * a_s_js_floor[j] / _temp1[i] * 0.45
-			v2 := _p_is_js[j] * a_s_js_not_floor[j] / _temp2[i] * 0.55
+			// 境界jが床である場合 v1
+			v1 := _p_is_js[j] * a_s_js_floor[j] / _temp1[i] * f_mrt_hum_floor
+
+			// 境界jが床ではない場合 v2
+			v2 := _p_is_js[j] * a_s_js_not_floor[j] / _temp2[i] * (1.0 - f_mrt_hum_floor)
+
 			f_mrt_hum_is_js[off] = v1 + v2
 			off++
 		}
@@ -49,3 +56,6 @@ func get_f_mrt_hum_js(p_is_js *mat.Dense, a_s_js mat.Vector, is_floor_js []bool)
 
 	return mat.NewDense(r, c, f_mrt_hum_is_js)
 }
+
+// 床の形態係数
+const f_mrt_hum_floor = 0.45
