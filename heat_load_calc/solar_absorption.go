@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // **** 日射吸収量 ****
 // See: https://github.com/HC-Energy/hc-energy-doc-ja/blob/main/docs/source/contents/03_26_eval_solar_absorption.rst

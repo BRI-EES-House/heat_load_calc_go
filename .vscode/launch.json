@@ -5,10 +5,10 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/heat_load_calc",
+            "program": "${workspaceFolder}/main.go",
             "args": [
                 "-input",
-                "${workspaceFolder}/example/jjj.json",
+                "${workspaceFolder}/example/data_example1.json",
                 "-weather_path",
                 "${workspaceFolder}/expanded_amedas",
             ]

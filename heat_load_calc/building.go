@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // **** 建物全般のパラメータ ****
 // https://hc-energy.readthedocs.io/ja/latest/contents/03_10_eval_building.html

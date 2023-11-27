@@ -16,7 +16,5 @@ In order to speed up the process, we believe the following should be kept in min
 # Quick Start
 
 ```
-cd heat_load_calc
-go build
-./heat_load_calc -input ../example/data_example1.json
+$ go run main.go -input example/data_example1.json --region 6
 ```

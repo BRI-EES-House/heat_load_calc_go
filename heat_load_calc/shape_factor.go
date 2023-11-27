@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // ***** 室内の境界の形態係数および放射熱伝達率 *****
 // See: https://hc-energy.readthedocs.io/ja/latest/contents/03_14_eval_shape_factor.html

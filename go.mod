@@ -1,4 +1,4 @@
-module heat_load_calc
+module github.com/BRI-EES-House/heat_load_calc_go
 
 go 1.18
 
@@ -17,3 +17,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/BRI-EES-House/heat_load_calc_go/heat_load_calc => ./heat_load_calc

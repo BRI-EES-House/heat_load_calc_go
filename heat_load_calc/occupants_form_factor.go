@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // ***** 在室者の形態係数 *****
 // See: https://hc-energy.readthedocs.io/ja/latest/contents/03_25_eval_occupants_form_factor.html

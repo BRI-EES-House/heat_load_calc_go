@@ -1,15 +1,12 @@
-package main
+package heat_load_calc
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"runtime/pprof"
-	"time"
 )
 
 type InputJson struct {
@@ -167,7 +164,7 @@ type EquipmentPropertJson struct {
 	    weather_file_path: 気象データのファイルパス
 	    region: 地域の区分
 */
-func run(
+func Run(
 	house_data_path string,
 	output_data_dir string,
 	weather_specify_method string,
@@ -255,60 +252,4 @@ func run(
 	// result_detail_a_path = path.join(output_data_dir, 'result_detail_a.csv')
 	// logger.info('Save calculation results data (simplified version) to `{}`'.format(result_detail_a_path))
 	// dd_a.to_csv(result_detail_a_path, encoding='cp932')
-}
-
-func main() {
-	var house_data string
-	flag.StringVar(&house_data, "input", "", "計算を実行するJSONファイル")
-
-	var output_data_dir string
-	flag.StringVar(&output_data_dir, "o", ".", "出力フォルダ")
-
-	var weather string
-	flag.StringVar(&weather, "weather", "ees", "気象データの作成方法を指定します。")
-
-	var weather_path string
-	flag.StringVar(&weather_path, "weather_path", "", "気象データの絶対パスを指定します。weatherオプションでfileが指定された場合は必ず指定します。")
-
-	var region int
-	flag.IntVar(&region, "region", 6, "地域の区分を指定します。気象データの作成方法として建築物省エネ法を指定した場合には必ず指定します。")
-
-	var pprpf_enable bool
-	flag.BoolVar(&pprpf_enable, "pprof", false, "プロファイリングを実行し、cpu.prof ファイルに保存します。")
-
-	// 引数を受け取る
-	flag.Parse()
-
-	if house_data == "" {
-		log.Fatal("inputオプションを指定してください。")
-	}
-
-	if pprpf_enable {
-		f, err := os.Create("cpu.prof")
-		if err != nil {
-			panic(err)
-		}
-		defer func() {
-			if err := f.Close(); err != nil {
-				panic(err)
-			}
-		}()
-		if err := pprof.StartCPUProfile(f); err != nil {
-			panic(err)
-		}
-		defer pprof.StopCPUProfile()
-	}
-
-	start := time.Now()
-
-	run(
-		house_data,
-		output_data_dir,
-		weather,
-		weather_path,
-		region,
-	)
-
-	elapsedTime := time.Since(start)
-	log.Printf("elapsed_time: %v [sec]", elapsedTime)
 }

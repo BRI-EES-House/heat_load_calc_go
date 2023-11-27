@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 /*
 附属書X17 計算期間

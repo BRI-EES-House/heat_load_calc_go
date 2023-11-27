@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // 空気の比熱, J/kg K
 const c_a = 1005.0

@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 // 応答係数の初項、指数項別応答係数、公比の計算
 

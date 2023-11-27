@@ -1,4 +1,4 @@
-package main
+package heat_load_calc
 
 import (
 	"errors"
