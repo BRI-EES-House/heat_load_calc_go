@@ -2953,9 +2953,10 @@ func get_v_vent_mec_is_ns(
 ) *ScheduleData {
 	v_vent_mec_is_ns := make([]float64, len(v_vent_mec_local_is_ns.Data))
 	off := 0
-	for i := 0; i < v_vent_mec_local_is_ns.Len(); i++ {
+	for n := 0; n < v_vent_mec_local_is_ns.Len(); n++ {
 		for j := 0; j < v_vent_mec_local_is_ns.BatchSize; j++ {
-			v_vent_mec_is_ns[i] = v_vent_mec_local_is_ns.Data[off] + v_vent_mec_general_is[j]
+			v_vent_mec_is_ns[off] = v_vent_mec_local_is_ns.Data[off] + v_vent_mec_general_is[j]
+			off++
 		}
 	}
 
