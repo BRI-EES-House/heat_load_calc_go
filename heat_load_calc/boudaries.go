@@ -110,7 +110,7 @@ type Boundary struct {
 type Boundaries struct {
 	bss                   []*Boundary   // 境界
 	p_is_js               *mat.Dense    // 室iと境界jの関係を表す係数（境界jから室iへの変換）, [i, j]
-	q_trs_sol_is_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	q_trs_sol_is_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [i, n]
 	n_b                   int           // 境界の数
 	n_ground              int           // 地盤の数
 	id_bs_js              []int         // ID

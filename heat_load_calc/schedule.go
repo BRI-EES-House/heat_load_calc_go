@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
 
 	"gonum.org/v1/gonum/floats"
@@ -115,7 +116,7 @@ func get_schedule(number_of_occupants NumberOfOccupants, s_name_is []string, a_f
 	n_hum_is_ns := _get_schedules(s_name_is, noo, n_p, "number_of_people", true, false)
 
 	// ステップ n の室 i における空調割合, [i, n]
-	ac_demand_is_ns := _get_schedules(s_name_is, noo, n_p, "is_temp_limit_set", true, false)
+	ac_demand_is_ns := _get_schedules(s_name_is, noo, n_p, "is_temp_limit_set", true, true)
 
 	// ステップ n の室 i における空調モード, [i, n]
 	ac_setting_is_ns := _get_schedules(s_name_is, noo, n_p, "is_temp_limit_set", false, false)
@@ -146,6 +147,33 @@ func get_schedule(number_of_occupants NumberOfOccupants, s_name_is []string, a_f
 		ac_demand_is_ns,
 		ac_setting_is_ns,
 	)
+}
+
+func (self *Schedule) save_schedule(output_data_dir string) {
+	// ステップnの室iにおける局所換気量, m3/s, [i, 8760*4]
+	mid_data_local_vent_path := filepath.Join(output_data_dir, "mid_data_local_vent.csv")
+	log.Printf("Save v_mec_vent_local_is_ns to `%s`", mid_data_local_vent_path)
+	self.v_mec_vent_local_is_ns.Save(mid_data_local_vent_path)
+
+	// ステップnの室iにおける内部発熱, W, [8760*4]
+	mid_data_heat_generation_path := filepath.Join(output_data_dir, "mid_data_heat_generation.csv")
+	log.Printf("Save q_gen_is_ns to `%s`", mid_data_heat_generation_path)
+	self.q_gen_is_ns.Save(mid_data_heat_generation_path)
+
+	// ステップnの室iにおける人体発湿を除く内部発湿, kg/s, [8760*4]
+	mid_data_moisture_generation_path := filepath.Join(output_data_dir, "mid_data_moisture_generation.csv")
+	log.Printf("Save x_gen_is_ns to `%s`", mid_data_moisture_generation_path)
+	self.x_gen_is_ns.Save(mid_data_moisture_generation_path)
+
+	// ステップnの室iにおける在室人数, [8760*4]
+	mid_data_occupants_path := filepath.Join(output_data_dir, "mid_data_occupants.csv")
+	log.Printf("Save n_hum_is_ns to `%s`", mid_data_occupants_path)
+	self.n_hum_is_ns.Save(mid_data_occupants_path)
+
+	// ステップnの室iにおける空調需要, [8760*4]
+	mid_data_ac_demand_path := filepath.Join(output_data_dir, "mid_data_ac_demand.csv")
+	log.Printf("Save ac_demand_is_ns to `%s`", mid_data_ac_demand_path)
+	self.ac_demand_is_ns.Save(mid_data_ac_demand_path)
 }
 
 /*
@@ -197,6 +225,40 @@ func (self *ScheduleData) Get(i int) *mat.VecDense {
 
 func (self *ScheduleData) Len() int {
 	return len(self.Data) / self.BatchSize
+}
+
+func (self *ScheduleData) Save(fileName string) error {
+	f, err := os.Create(fileName)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+	defer f.Close()
+
+	r, c := self.Len(), self.BatchSize
+
+	off := 0
+	for i := 0; i < r; i++ {
+		f.WriteString(_format_float64(self.Data[off]))
+		off++
+		for j := 1; j < c; j++ {
+			f.WriteString(",")
+			f.WriteString(_format_float64(self.Data[off]))
+			off++
+		}
+		f.WriteString("\n")
+	}
+
+	return nil
+}
+
+func _format_float64(f float64) string {
+	if f == 1.0 {
+		return "1.0"
+	} else if f == 0.0 {
+		return "0.0"
+	}
+	return fmt.Sprintf("%g", f)
 }
 
 func _get_schedules(

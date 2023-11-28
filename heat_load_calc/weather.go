@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gocarina/gocsv"
 	"gonum.org/v1/gonum/mat"
@@ -90,6 +92,44 @@ func make_weather(method string, itv Interval, file_path string, region Region) 
 	} else {
 		panic(method)
 	}
+}
+
+func (self *Weather) get_weather_csv() string {
+	var sb strings.Builder
+
+	// Header
+	sb.WriteString(",temperature,absolute humidity,normal direct solar radiation,horizontal sky solar radiation,outward radiation,sun altitude,sun azimuth\n")
+
+	// インターバル(分)
+	freq := self._itv.get_pandas_freq()
+
+	// 開始日時と終了日時を定義
+	start := time.Date(1989, 1, 1, 0, 0, 0, 0, time.Local)
+	end := time.Date(1989, 12, 31, 23, 59, 59, 0, time.Local)
+
+	// 現在の日時を開始日時にセット
+	current := start
+
+	// 終了日時に到達するまでループ
+	n := 0
+	for current.Before(end) {
+		sb.WriteString(fmt.Sprintf("%s,%g,%g,%g,%g,%g,%g,%g\n",
+			current.Format("2006-01-02 15:04:05"),
+			self._theta_o_ns[n],
+			self._x_o_ns[n],
+			self._i_dn_ns[n],
+			self._i_sky_ns[n],
+			self._r_n_ns[n],
+			self._h_sun_ns[n],
+			self._a_sun_ns[n],
+		))
+
+		// 30分を加算
+		current = current.Add(time.Duration(freq * float64(time.Minute)))
+		n++
+	}
+
+	return sb.String()
 }
 
 // データの数を取得する。

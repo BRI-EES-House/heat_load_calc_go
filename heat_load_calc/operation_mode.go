@@ -26,6 +26,20 @@ const (
 	STOP_CLOSE                          // STOP_CLOSE : 暖房・冷房停止で窓「閉」
 )
 
+func (self OperationMode) String() string {
+	switch self {
+	case COOLING:
+		return "COOLING"
+	case HEATING:
+		return "HEATING"
+	case STOP_OPEN:
+		return "STOP_OPEN"
+	case STOP_CLOSE:
+		return "STOP_CLOSE"
+	}
+	panic(self)
+}
+
 type Operation struct {
 	_ac_method          ACMethod
 	_ac_config          []ACConfigJson
@@ -264,10 +278,10 @@ func (self *Operation) get_theta_target_is_n(
 	clo_is_n := get_clo_is_ns(operation_mode_is_n)
 
 	// ステップnにおける室iの在室者周りの風速, m/s, [i, 1]
-	v_hum_is_n := get_v_hum_is_n(
+	v_hum_is_n := _get_v_hum_is_n(
 		operation_mode_is_n,
-		is_radiative_heating_is,
-		is_radiative_cooling_is,
+		is_radiative_heating_is[0],
+		is_radiative_cooling_is[0],
 	)
 
 	// (1) ステップ n における室 i の在室者周りの対流熱伝達率, W/m2K, [i, 1]
@@ -428,38 +442,38 @@ func _get_theta_target(
 	    Returns:
 	        ステップnにおける室iの在室者周りの風速, m/s, [i, 1]
 */
-func get_v_hum_is_n(
+func _get_v_hum_is_n(
 	operation_mode_is []OperationMode,
-	is_radiative_cooling_is []bool,
-	is_radiative_heating_is []bool,
+	is_radiative_cooling_is bool,
+	is_radiative_heating_is bool,
 ) []float64 {
 	// 在室者周りの風速はデフォルトで 0.0 m/s とおく
 	v_hum_is_n := make([]float64, len(operation_mode_is))
 
-	for i := 0; i < len(v_hum_is_n); i++ {
-		if operation_mode_is[i] == HEATING {
-			if is_radiative_heating_is[i] {
+	for n := 0; n < len(v_hum_is_n); n++ {
+		if operation_mode_is[n] == HEATING {
+			if is_radiative_heating_is {
 				// 対流暖房時の風速を 0.2 m/s とする
-				v_hum_is_n[i] = 0.2
+				v_hum_is_n[n] = 0.2
 			} else {
 				// 放射暖房時の風速を 0.0 m/s とする
-				v_hum_is_n[i] = 0.0
+				v_hum_is_n[n] = 0.0
 			}
-		} else if operation_mode_is[i] == COOLING {
-			if is_radiative_cooling_is[i] {
+		} else if operation_mode_is[n] == COOLING {
+			if is_radiative_cooling_is {
 				// 対流冷房時の風速を 0.2 m/s とする
-				v_hum_is_n[i] = 0.2
+				v_hum_is_n[n] = 0.2
 			} else {
 				// 放射冷房時の風速を 0.0 m/s とする
-				v_hum_is_n[i] = 0.0
+				v_hum_is_n[n] = 0.0
 			}
 		}
 
 		// 暖冷房をせずに窓を開けている時の風速を 0.1 m/s とする
 		// 対流暖房・冷房時と窓を開けている時は同時には起こらないことを期待しているが
 		// もし同時にTrueの場合は窓を開けている時の風速が優先される（上書きわれる）
-		if operation_mode_is[i] == STOP_OPEN {
-			v_hum_is_n[i] = 0.1
+		if operation_mode_is[n] == STOP_OPEN {
+			v_hum_is_n[n] = 0.1
 		}
 
 		// 上記に当てはまらない場合の風速は 0.0 m/s のままである。

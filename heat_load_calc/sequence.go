@@ -13,10 +13,10 @@ type PreCalcParameters struct {
 
 	// ステップ n における室 i に設置された備品等による透過日射吸収熱量, W, [i, n+1]
 	// NOTE: 計算仕様では扱わない
-	q_sol_frt_is_ns mat.Matrix
+	q_sol_frt_is_ns *mat.Dense
 
 	// ステップnの境界jにおける透過日射熱取得量のうち表面に吸収される日射量, W/m2, [j, 8760*4]
-	q_s_sol_js_ns mat.Matrix
+	q_s_sol_js_ns *mat.Dense
 
 	// 係数 f_AX (LU分解済み) , [i, i] 式(4.5)
 	f_ax_js_js *mat.LU
@@ -304,7 +304,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.bs.p_is_js,
 		self.scd.q_gen_is_ns.Get(nn),
 		q_hum_is_n,
-		ss.q_sol_frt_is_ns.(mat.ColViewer).ColView(nn_plus),
+		ss.q_sol_frt_is_ns.ColView(nn_plus),
 		c_n.theta_frt_is_n,
 		self.weather.theta_o_ns_plus[nn_plus+1],
 		c_n.theta_r_is_n,
@@ -476,7 +476,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		}
 	}
 
-	theta_lower_target_is_n_pls, theta_upper_target_is_n_pls, _, _ :=
+	theta_lower_target_is_n_pls, theta_upper_target_is_n_pls, h_hum_c_is_n, h_hum_r_is_n :=
 		self.op.get_theta_target_is_n(
 			operation_mode_is_n,
 			theta_r_ntr_is_n_pls,
@@ -631,7 +631,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.rms.c_sh_frt_is,
 		delta_t,
 		self.rms.g_sh_frt_is,
-		ss.q_sol_frt_is_ns.(mat.ColViewer).ColView(nn_plus),
+		ss.q_sol_frt_is_ns.ColView(nn_plus),
 		c_n.theta_frt_is_n,
 		theta_r_is_n_pls,
 	)
@@ -654,21 +654,21 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.bs.h_s_r_js,
 		l_rs_is_n,
 		self.bs.p_js_is,
-		ss.q_s_sol_js_ns.(mat.ColViewer).ColView(nn_plus+1),
+		ss.q_s_sol_js_ns.ColView(nn_plus+1),
 		theta_r_is_n_pls,
 		theta_s_js_n_pls,
 	)
 
 	// ステップ n+1 における境界 j の裏面温度, degree C, [j, 1]
 	// TODO: この値は記録にしか使用していないので、ポスト処理にまわせる。
-	// theta_rear_js_n_pls := get_theta_s_rear_js_n(
-	// 	self.bs.k_ei_js_js,
-	// 	theta_ei_js_n_pls,
-	// 	self.bs.k_eo_js,
-	// 	self.bs.theta_o_eqv_js_ns.ColView(nn+1),
-	// 	self.bs.k_s_r_js,
-	// 	theta_r_is_n_pls,
-	// )
+	theta_rear_js_n_pls := get_theta_s_rear_js_n(
+		self.bs.k_ei_js_js,
+		theta_ei_js_n_pls,
+		self.bs.k_eo_js,
+		self.bs.theta_o_eqv_js_ns.ColView(nn+1),
+		self.bs.k_s_r_js,
+		theta_r_is_n_pls,
+	)
 
 	// 式(2.1) 表面熱流計算
 	// ステップ n+1 における境界 j の表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]
@@ -698,12 +698,12 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 	)
 
 	// ステップ n から ステップ n+1 における室 i の潜熱負荷（加湿を正・除湿を負とする）, W, [i, 1]
-	// l_cl_is_n := get_l_cl_is_n(
-	// 	f_l_cl_wgt_is_is_n,
-	// 	f_l_cl_cst_is_n,
-	// 	get_l_wtr(),
-	// 	x_r_is_n_pls,
-	// )
+	l_cl_is_n := get_l_cl_is_n(
+		f_l_cl_wgt_is_is_n,
+		f_l_cl_cst_is_n,
+		l_wtr,
+		x_r_is_n_pls,
+	)
 
 	// ステップ n+1 における室 i の備品等等の絶対湿度, kg/kg(DA), [i, 1]
 	x_frt_is_n_pls := get_x_frt_is_n_pls(
@@ -714,31 +714,32 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		x_r_is_n_pls,
 	)
 
-	// if recorder is not None:
-	//     recorder.recording(
-	//         n=n,
-	//         theta_r_is_n_pls=theta_r_is_n_pls,
-	//         theta_mrt_hum_is_n_pls=theta_mrt_hum_is_n_pls,
-	//         x_r_is_n_pls=x_r_is_n_pls,
-	//         theta_frt_is_n_pls=theta_frt_is_n_pls,
-	//         x_frt_is_n_pls=x_frt_is_n_pls,
-	//         theta_ei_js_n_pls=theta_ei_js_n_pls,
-	//         q_s_js_n_pls=q_s_js_n_pls,
-	//         theta_ot_is_n_pls=theta_ot_is_n_pls,
-	//         theta_s_js_n_pls=theta_s_js_n_pls,
-	//         theta_rear_js_n=theta_rear_js_n_pls,
-	//         f_cvl_js_n_pls=f_cvl_js_n_pls,
-	//         operation_mode_is_n=operation_mode_is_n,
-	//         l_cs_is_n=l_cs_is_n,
-	//         l_rs_is_n=l_rs_is_n,
-	//         l_cl_is_n=l_cl_is_n,
-	//         h_hum_c_is_n=h_hum_c_is_n,
-	//         h_hum_r_is_n=h_hum_r_is_n,
-	//         q_hum_is_n=q_hum_is_n,
-	//         x_hum_is_n=x_hum_is_n,
-	//         v_leak_is_n=v_leak_is_n,
-	//         v_vent_ntr_is_n=v_vent_ntr_is_n
-	//     )
+	if recorder != nil {
+		recorder.recording(
+			n,
+			theta_r_is_n_pls,
+			theta_mrt_hum_is_n_pls,
+			x_r_is_n_pls,
+			theta_frt_is_n_pls,
+			x_frt_is_n_pls,
+			theta_ei_js_n_pls,
+			q_s_js_n_pls,
+			theta_ot_is_n_pls,
+			theta_s_js_n_pls,
+			theta_rear_js_n_pls,
+			f_cvl_js_n_pls,
+			operation_mode_is_n,
+			l_cs_is_n,
+			l_rs_is_n,
+			l_cl_is_n,
+			h_hum_c_is_n,
+			h_hum_r_is_n,
+			q_hum_is_n,
+			x_hum_is_n,
+			v_leak_is_n,
+			v_vent_ntr_is_n,
+		)
+	}
 
 	c_n.operation_mode_is_n = operation_mode_is_n
 	c_n.theta_r_is_n.CopyVec(theta_r_is_n_pls)
@@ -906,7 +907,7 @@ func get_x_frt_is_n_pls(
 	return temp1
 }
 
-var __l_cl_is_n mat.Dense
+var __l_cl_is_n mat.VecDense
 
 /*
 対流暖冷房設備の潜熱処理量を求める。
@@ -931,11 +932,11 @@ func get_l_cl_is_n(
 	f_l_cl_cst_is_n *mat.VecDense,
 	l_wtr float64,
 	x_r_is_n_pls *mat.VecDense,
-) *mat.Dense {
+) *mat.VecDense {
 	temp1 := &__l_cl_is_n
-	temp1.Mul(f_l_cl_wgt_is_is_n, x_r_is_n_pls)
-	temp1.Add(temp1, f_l_cl_cst_is_n)
-	temp1.Scale(l_wtr, temp1)
+	temp1.MulVec(f_l_cl_wgt_is_is_n, x_r_is_n_pls)
+	temp1.AddVec(temp1, f_l_cl_cst_is_n)
+	temp1.ScaleVec(l_wtr, temp1)
 
 	return temp1
 }
@@ -2482,9 +2483,9 @@ func get_f_wsv_js_n_pls(
 	f_ax_js_js *mat.LU,
 ) *mat.VecDense {
 	// 総じて逆行列を用いた場合のほうが速い
-	__f_wsv_js_n_pls.MulVec(f_ax_js_js_inv, f_cvl_js_n_pls)
+	//__f_wsv_js_n_pls.MulVec(f_ax_js_js_inv, f_cvl_js_n_pls)
 
-	//f_ax_js_js.SolveVecTo(&__f_wsv_js_n_pls, false, f_cvl_js_n_pls)
+	f_ax_js_js.SolveVecTo(&__f_wsv_js_n_pls, false, f_cvl_js_n_pls)
 
 	return &__f_wsv_js_n_pls
 }

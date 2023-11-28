@@ -1,13 +1,13 @@
 package heat_load_calc
 
 // インターバル
-type Interval string
+type Interval int
 
 // インターバル
 const (
-	IntervalH1  Interval = "1h"
-	IntervalM30 Interval = "30m"
-	IntervalM15 Interval = "15m"
+	IntervalH1  Interval = 60
+	IntervalM30 Interval = 30
+	IntervalM15 Interval = 15
 )
 
 /*
@@ -91,15 +91,15 @@ pandas 用の freq 引数を取得する。
 Returns:
 	freq 引数
 */
-func (i Interval) get_pandas_freq() string {
+func (i Interval) get_pandas_freq() float64 {
 	switch i {
 	case IntervalH1:
-		return "H"
+		return 60
 	case IntervalM30:
-		return "30min"
+		return 30
 	case IntervalM15:
-		return "15min"
+		return 15
 	default:
-		return ""
+		return 0
 	}
 }

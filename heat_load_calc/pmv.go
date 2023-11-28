@@ -43,10 +43,10 @@ func get_pmv_is_n(
 		met_is,
 	)
 
-	l := len(theta_r_is_n)
-	pmv_is_n := make([]float64, l)
+	c := len(theta_r_is_n)
+	pmv_is_n := make([]float64, c)
 
-	for i := 0; i < l; i++ {
+	for i := 0; i < c; i++ {
 		// ステップnにおける室iの在室者の作用温度, degree C, [i, 1]
 		theta_ot := (h_hum_r_is_n[i]*theta_mrt_is_n[i] + h_hum_c_is_n[i]*theta_r_is_n[i]) / h_hum_is_n[i]
 
@@ -56,8 +56,11 @@ func get_pmv_is_n(
 		// ステップ n における室 i の在室者の着衣面積率, [i, 1]
 		f_cl := _get_f_cl_is_n(i_cl)
 
+		// ステップ n における室 i の在室者の代謝量, W/m2, [i, 1]
+		m_is := _get_m_is(met_is[i])
+
 		// ステップnにおける室iの在室者の厚着時のPMV, [i, 1]
-		pmv_is_n[i] = _get_pmv_is_n(theta_r_is_n[i], p_a_is_n[i], h_hum_is_n[i], theta_ot, i_cl, f_cl, met_is[i])
+		pmv_is_n[i] = _get_pmv_is_n(theta_r_is_n[i], p_a_is_n[i], h_hum_is_n[i], theta_ot, i_cl, f_cl, m_is)
 	}
 
 	return pmv_is_n
@@ -202,6 +205,8 @@ func _get_h_hum_c_is_n_and_h_hum_r_is_n(
 	h_hum_r_is_n := make([]float64, l)
 
 	if method == "convergence" {
+		// 収束計算による方法
+
 		var theta_r, v_hum, theta_mrt, clo, m float64
 
 		f := func(t float64) float64 {
@@ -214,13 +219,15 @@ func _get_h_hum_c_is_n_and_h_hum_r_is_n(
 			// ステップnにおける室iの在室者の作用温度, degree C, [i, 1]
 			theta_ot := _get_theta_ot_is_n(h_hum_r, theta_mrt, h_hum_c, theta_r)
 
-			return _get_theta_cl_is_n(clo, theta_ot, m, h_hum_r, h_hum_c) - t
+			theta_cl := _get_theta_cl_is_n(clo, theta_ot, m, h_hum_r, h_hum_c)
+
+			return theta_cl - t
 		}
 
 		// Bisection method
 		findRoot := func(a float64, b float64, tol float64, maxIter int) (float64, error) {
 			if f(a)*f(b) >= 0 {
-				return 0, fmt.Errorf("no root found in the interval [%f, %f]", a, b)
+				return 0, fmt.Errorf("no root found in the interval [%f, %f] (f(%f)=%f, f(%f)=%f)", a, b, a, f(a), b, f(b))
 			}
 
 			var c float64
@@ -241,7 +248,7 @@ func _get_h_hum_c_is_n_and_h_hum_r_is_n(
 		}
 
 		a := 0.0
-		b := 5.0
+		b := 100.0
 		tol := 1e-6
 		maxIter := 100
 
@@ -252,7 +259,7 @@ func _get_h_hum_c_is_n_and_h_hum_r_is_n(
 			clo = clo_is_n[i]
 
 			// 室 i の在室者の代謝量（人体内部発熱量）, W/m2
-			m = _get_m_is(met_is[i])
+			m = met_is[i]
 
 			// ステップnにおける室iの在室者の着衣温度, degree C, [i, 1]
 			theta_cl, err := findRoot(a, b, tol, maxIter)
@@ -268,6 +275,7 @@ func _get_h_hum_c_is_n_and_h_hum_r_is_n(
 		}
 
 	} else if method == "constant" {
+		// 収束計算によらない方法
 		for i := 0; i < l; i++ {
 			// ステップnにおける室iの在室者の着衣温度, degree C, [i, 1]
 			theta_r := theta_r_is_n[i]

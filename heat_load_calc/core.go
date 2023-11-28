@@ -34,7 +34,7 @@ func calc(
 	n_d_main int,
 	n_d_run_up int,
 	n_d_run_up_build int,
-) {
+) (string, string, *Boundaries) {
 	log.Printf("計算開始")
 
 	// 本計算のステップ数
@@ -64,7 +64,7 @@ func calc(
 
 	result := NewRecorder(n_step_main, sqc.rms.id_rm_is, sqc.bs.id_bs_js, itv)
 
-	result.pre_recording(pp)
+	result.pre_recording(sqc.weather, sqc.scd, sqc.bs, pp.q_sol_frt_is_ns, pp.q_s_sol_js_ns)
 
 	// 建物を計算するにあたって初期値を与える
 	c_n := initialize_conditions(sqc.rms.n_rm, sqc.bs.n_b)
@@ -74,6 +74,7 @@ func calc(
 
 	log.Printf("助走計算（建物全体） (%d steps)\n", n_step_run_up_build)
 
+	// NOTE: XX_plusの配列はインデックスが負の場合に適切な位置を参照しているのか良く確認する。
 	N_plus := N + 1
 	nn = N - n_step_run_up_build
 	nn_plus := N_plus - n_step_run_up_build
@@ -84,6 +85,7 @@ func calc(
 
 	log.Printf("本計算 (%d steps)\n", n_step_main)
 
+	// TODO: recorder に1/1 0:00の瞬時状態値を書き込む
 	m := 1
 	for n := 0; n < n_step_main; n++ {
 		c_n = sqc.run_tick(n, n, n, c_n, result)
@@ -92,16 +94,14 @@ func calc(
 			m++
 		}
 	}
+	log.Print("12 / 12 calculated.")
 
-	// result.post_recording(pp)
+	result.post_recording(sqc.rms, sqc.bs, pp.f_mrt_is_js, sqc.es)
 
 	log.Println("ログ作成")
 
 	// dd: data detail, 15分間隔のすべてのパラメータ pd.DataFrame
-	// dd_i, dd_a, err := result.export_pd()
-	// if err != nil {
-	// 	return nil, nil, err
-	// }
+	dd_a, dd_i := result.export_pd()
 
-	// return dd_i, dd_a, nil
+	return dd_a, dd_i, sqc.bs
 }

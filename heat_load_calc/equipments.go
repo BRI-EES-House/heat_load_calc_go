@@ -5,8 +5,8 @@ import (
 )
 
 type Equipments struct {
-	is_radiative_heating_is []bool
-	is_radiative_cooling_is []bool
+	is_radiative_heating_is []bool // 室iの暖房方式として放射空調が設置されているかどうか
+	is_radiative_cooling_is []bool // 室iの冷房方式として放射空調が設置されているかどうか
 	q_rs_h_max_is           []float64
 	q_rs_c_max_is           []float64
 	beta_h_is               []float64

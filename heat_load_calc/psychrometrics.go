@@ -53,8 +53,8 @@ func get_x(p_v float64) float64 {
         ただし、省エネ基準の式は絶対湿度の単位として(g/kg(DA))を使用しているが、
         ここでは、kg/kg(DA)に統一した。
 */
+// 大気圧, Pa
 func get_p_v_r_is_n(x_r_is_n []float64) []float64 {
-	// 大気圧, Pa
 	f := _get_f()
 
 	p_v_r_is_n := make([]float64, len(x_r_is_n))
