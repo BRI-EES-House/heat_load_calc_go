@@ -1653,7 +1653,10 @@ func __ScaleRowsTo(dst *mat.Dense, a *mat.VecDense, src *mat.Dense) {
 	sc := src_mat.Cols
 
 	if dr != sr || dc != sc {
-		panic("Invalid Matrix dimensions")
+		dst.ReuseAs(sr, sc)
+		dst_mat = dst.RawMatrix()
+		dr = dst_mat.Rows
+		dc = dst_mat.Cols
 	}
 
 	_a := a.RawVector().Data
@@ -2884,42 +2887,44 @@ func get_f_ax_js_is(
 		temp1[i] = 1.0 + phi_a0_js.AtVec(i)*(h_s_c_js.AtVec(i)+h_s_r_js.AtVec(i))
 	}
 
-	// diag of temp1
+	// temp2 = diag of temp1
 	temp2 := NewDiagAsDenseFromFloat64(temp1)
 
-	// h_s_r_js * phi_a0_js
+	// temp3 = h_s_r_js * phi_a0_js
 	var temp3 mat.VecDense
 	temp3.MulElemVec(h_s_r_js, phi_a0_js)
 
-	// np.dot(p_js_is, f_mrt_is_js)
+	// temp4 = np.dot(p_js_is, f_mrt_is_js)
 	var temp4 mat.Dense
 	temp4.Mul(p_js_is, f_mrt_is_js)
 
-	// temp4 * temp3
+	// temp5 = temp4 * temp3
+	//       = np.dot(p_js_is, f_mrt_is_js) * h_s_r_js * phi_a0_js
 	var temp5 mat.Dense
-	temp5.Apply(func(i, j int, v float64) float64 {
-		return v * temp3.AtVec(i)
-	}, &temp4)
+	__ScaleRowsTo(&temp5, &temp3, &temp4)
 
-	// np.dot(k_ei_js_js, np.dot(p_js_is, f_mrt_is_js))
-	var temp6 mat.Dense
-	temp6.Mul(k_ei_js_js, &temp4)
+	// temp6 = h_s_r_js / (h_s_c_js + h_s_r_js)
+	var temp6 mat.VecDense
+	temp6.AddVec(h_s_c_js, h_s_r_js)
+	temp6.DivElemVec(h_s_r_js, &temp6)
 
-	// h_s_r_js * phi_t0_js / (h_s_c_js + h_s_r_js)
-	var temp7 mat.VecDense
-	temp7.AddVec(h_s_c_js, h_s_r_js)
-	temp7.MulElemVec(&temp7, phi_t0_js)
-	temp7.MulElemVec(&temp7, h_s_r_js)
+	// temp4 = temp4 * temp6
+	//       = np.dot(p_js_is, f_mrt_is_js) * h_s_r_js / (h_s_c_js + h_s_r_js)
+	__ScaleRows(&temp4, &temp6)
 
-	// temp6 * temp7
-	temp6.Apply(func(i, j int, v float64) float64 {
-		return v * temp7.AtVec(i)
-	}, &temp6)
+	// temp7 = np.dot(k_ei_js_js, temp4)
+	//       = np.dot(k_ei_js_js, np.dot(p_js_is, f_mrt_is_js) * h_s_r_js / (h_s_c_js + h_s_r_js))
+	var temp7 mat.Dense
+	temp7.Mul(k_ei_js_js, &temp4)
 
-	// temp2 - temp5 - temp6
+	// temp7 = temp7 * phi_t0_js
+	//       = np.dot(k_ei_js_js, np.dot(p_js_is, f_mrt_is_js) * h_s_r_js / (h_s_c_js + h_s_r_js)) * phi_t0_js
+	__ScaleRows(&temp7, phi_t0_js)
+
+	// result = temp2 - temp5 - temp7
 	var result mat.Dense
 	result.Sub(temp2, &temp5)
-	result.Sub(&result, &temp6)
+	result.Sub(&result, &temp7)
 
 	// 高速化のために、ここでLU分解と逆行列の計算を行う
 	var lu mat.LU
