@@ -8,6 +8,10 @@ import (
 	"time"
 
 	"github.com/BRI-EES-House/heat_load_calc_go/heat_load_calc"
+	"gonum.org/v1/gonum/blas/blas64"
+	"gonum.org/v1/gonum/lapack/lapack64"
+	blas "gonum.org/v1/netlib/blas/netlib"
+	lapack "gonum.org/v1/netlib/lapack/netlib"
 )
 
 func main() {
@@ -35,11 +39,19 @@ func main() {
 	var pprpf_enable bool
 	flag.BoolVar(&pprpf_enable, "pprof", false, "プロファイリングを実行し、cpu.prof ファイルに保存します。")
 
+	var lapack_enable bool
+	flag.BoolVar(&pprpf_enable, "lapack", false, "LAPACKおよびBLASを使用します。")
+
 	// 引数を受け取る
 	flag.Parse()
 
 	if house_data == "" {
 		log.Fatal("inputオプションを指定してください。")
+	}
+
+	if lapack_enable {
+		blas64.Use(blas.Implementation{})
+		lapack64.Use(lapack.Implementation{})
 	}
 
 	if pprpf_enable {
