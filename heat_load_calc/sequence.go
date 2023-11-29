@@ -2832,11 +2832,15 @@ func get_f_fia_js_is(
 		return phi_a0_js.AtVec(j) * h_s_c_js.AtVec(j) * v
 	}, p_js_is)
 
-	// np.dot(k_ei_js_js, p_js_is) * phi_t0_js * h_s_c_js / (h_s_c_js + h_s_r_js)
+	// np.dot(k_ei_js_js, p_js_is * h_s_c_js / (h_s_c_js + h_s_r_js)) * phi_t0_js
 	var temp2 mat.Dense
-	temp2.Mul(k_ei_js_js, p_js_is)
 	temp2.Apply(func(j, i int, v float64) float64 {
-		return v * phi_t0_js.AtVec(j) * h_s_c_js.AtVec(j) / (h_s_c_js.AtVec(j) + h_s_r_js.AtVec(j))
+		return v * h_s_c_js.AtVec(j) / (h_s_c_js.AtVec(j) + h_s_r_js.AtVec(j))
+	}, p_js_is)
+
+	temp2.Mul(k_ei_js_js, &temp2)
+	temp2.Apply(func(j, i int, v float64) float64 {
+		return phi_t0_js.AtVec(j) * v
 	}, &temp2)
 
 	// phi_t0_js * k_s_r_js_is
