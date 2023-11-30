@@ -452,7 +452,7 @@ func _get_v_hum_is_n(
 
 	for n := 0; n < len(v_hum_is_n); n++ {
 		if operation_mode_is[n] == HEATING {
-			if is_radiative_heating_is {
+			if !is_radiative_heating_is {
 				// 対流暖房時の風速を 0.2 m/s とする
 				v_hum_is_n[n] = 0.2
 			} else {
@@ -460,7 +460,7 @@ func _get_v_hum_is_n(
 				v_hum_is_n[n] = 0.0
 			}
 		} else if operation_mode_is[n] == COOLING {
-			if is_radiative_cooling_is {
+			if !is_radiative_cooling_is {
 				// 対流冷房時の風速を 0.2 m/s とする
 				v_hum_is_n[n] = 0.2
 			} else {
