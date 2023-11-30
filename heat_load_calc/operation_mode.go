@@ -420,7 +420,7 @@ func _get_theta_target(
 				p_v_r_is_n[i],
 				h_hum_is_n[i],
 				met_is[i],
-				lower_target_is_n.AtVec(i),
+				upper_target_is_n.AtVec(i),
 			)
 			theta_upper_target_is_n.SetVec(i, v)
 		} else {
