@@ -30,15 +30,16 @@ type Recorder struct {
 	x_frt_is_ns          *mat.Dense        // ステップ n の室 i における家具の絶対湿度, kg/kgDA, [i, n+1], 出力名："rm[i]_x_fun"
 	pmv_is_ns            [][]float64       // ステップ n の室 i におけるPMV実現値, [i, n+1], 出力名："rm[i]_pmv"
 	ppd_is_ns            [][]float64       // ステップ n の室 i におけるPPD実現値, [i, n+1], 出力名："rm[i]_ppd"
-	theta_s_js_ns        *mat.Dense        // ステップ n の境界 j の室内側表面温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_s
-	theta_ei_js_ns       [][]float64       // ステップ n の境界 j の等価温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_e
-	theta_rear_js_ns     [][]float64       // ステップ n の境界 j の裏面温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_b
-	h_s_r_js_ns          [][]float64       // ステップ n の境界 j の表面放射熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hir_s
-	q_r_js_ns            *mat.Dense        // ステップ n の境界 j の表面放射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qir_s
-	h_s_c_js_ns          [][]float64       // ステップ n の境界 j の表面対流熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hic_s
-	q_c_js_ns            *mat.Dense        // ステップ n の境界 j の表面対流熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qic_s
-	q_i_sol_s_ns_js      [][]float64       // ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qisol_s
-	q_s_js_ns            [][]float64       // ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qiall_s
+	theta_s_js_ns        *mat.Dense        // ステップ n の境界 j の室内側表面温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_s"
+	theta_ei_js_ns       [][]float64       // ステップ n の境界 j の等価温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_e"
+	theta_rear_js_ns     [][]float64       // ステップ n の境界 j の裏面温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_b"
+	h_s_r_js_ns          [][]float64       // ステップ n の境界 j の表面放射熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hir_s"
+	q_r_js_ns            *mat.Dense        // ステップ n の境界 j の表面放射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qir_s"
+	h_s_c_js_ns          [][]float64       // ステップ n の境界 j の表面対流熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hic_s"
+	q_c_js_ns            *mat.Dense        // ステップ n の境界 j の表面対流熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qic_s"
+	q_i_sol_s_ns_js      [][]float64       // ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qisol_s"
+	q_s_js_ns            [][]float64       // ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qiall_s"
+	f_cvl_js_ns          [][]float64       //ステップ n の境界 j の ,  , [j, n+1], 出力名:"rm[i]_b[j]_f_cvl"
 	operation_mode_is_ns [][]OperationMode // ステップ n における室 i の運転状態（平均値）, [i, n], 出力名："rm[i]_ac_operate"
 	ac_demand_is_ns      [][]float64       // ステップ n における室 i の空調需要（平均値）, [i, n], 出力名："rm[i]_occupancy"
 	h_hum_c_is_ns        [][]float64       // ステップ n における室 i の人体周辺対流熱伝達率（平均値）, W/m2K, [i, n], 出力名："rm[i]_hc_hum"
@@ -152,23 +153,26 @@ func NewRecorder(n_step_main int, id_rm_is []int, id_bdry_js []int, itv Interval
 	// ステップ n の境界 j の裏面温度, degree C, [j, n+1], 出力名:"rm[i]_b[j]_t_b
 	r.theta_rear_js_ns = make2dim(n_boundries, r._n_step_i)
 
-	// ステップ n の境界 j の表面放射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qir_s
+	// ステップ n の境界 j の表面放射熱伝達率, W/mK, [j, n+1], 出力名:"rm[i]_b[j]_hir_s
 	r.h_s_r_js_ns = make2dim(n_boundries, r._n_step_i)
 
-	// ステップ n の境界 j の表面対流熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hic_s
+	// ステップ n の境界 j の表面放射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qir_s
 	r.q_r_js_ns = mat.NewDense(n_boundries, r._n_step_i, nil)
 
-	// ステップ n の境界 j の表面対流熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qic_s
+	// ステップ n の境界 j の表面対流熱伝達率, W/m2K, [j, n+1], 出力名:"rm[i]_b[j]_hic_s
 	r.h_s_c_js_ns = make2dim(n_boundries, r._n_step_i)
 
-	// ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qisol_s
+	// ステップ n の境界 j の表面対流熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qic_s
 	r.q_c_js_ns = mat.NewDense(n_boundries, r._n_step_i, nil)
 
-	// ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qiall_s
+	// ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qisol_s
 	r.q_i_sol_s_ns_js = make2dim(n_boundries, r._n_step_i)
 
-	// ステップ n の境界 j の係数cvl, degree C, [j, n+1], 出力名:"rm[i]_b[j]_cvl
+	// ステップ n の境界 j の表面日射熱流, W, [j, n+1], 出力名:"rm[i]_b[j]_qiall_s
 	r.q_s_js_ns = make2dim(n_boundries, r._n_step_i)
+
+	// ステップ n の境界 j の係数cvl, degree C, [j, n+1], 出力名:"rm[i]_b[j]_cvl
+	r.f_cvl_js_ns = make2dim(n_boundries, r._n_step_i)
 
 	// --------------- 積算値 ---------------
 
@@ -266,7 +270,7 @@ func NewRecorder(n_step_main int, id_rm_is []int, id_bdry_js []int, itv Interval
 		{"q_c_js_ns", "qic_s"},
 		{"q_i_sol_s_ns_js", "qisol_s"},
 		{"q_s_js_ns", "qiall_s"},
-		{"f_cvl", "f_cvl"},
+		{"f_cvl_js_ns", "f_cvl"},
 	}
 
 	return &r
@@ -328,8 +332,9 @@ func (r *Recorder) pre_recording(
 
 			// ステップ n の室 i における人体発湿を除く内部発湿, kg/s, [i, n]
 			r.x_gen_is_ns[i][n] = scd.x_gen_is_ns.Data[off]
+
+			off++
 		}
-		off++
 	}
 }
 
@@ -473,29 +478,27 @@ func (self *Recorder) recording(
 		// 瞬時値出力のステップ番号
 		n_i := n + 1
 
-		r, _ := theta_r_is_n_pls.Dims()
-		for i := 0; i < r; i++ {
-			// 次の時刻に引き渡す値
+		// 次の時刻に引き渡す値
+		for i := range self._id_rm_is {
 			self.theta_r_is_ns.SetCol(n_i, theta_r_is_n_pls.RawVector().Data)
-			for i := 0; i < r; i++ {
-				self.theta_mrt_hum_is_ns[i][n_i] = theta_mrt_hum_is_n_pls.AtVec(i)
-			}
+			self.theta_mrt_hum_is_ns[i][n_i] = theta_mrt_hum_is_n_pls.AtVec(i)
 			self.x_r_is_ns.SetCol(n_i, x_r_is_n_pls.RawVector().Data)
 			self.theta_frt_is_ns.SetCol(n_i, theta_frt_is_n_pls.RawVector().Data)
 			self.x_frt_is_ns.SetCol(n_i, x_frt_is_n_pls.RawVector().Data)
-			for i := 0; i < r; i++ {
-				self.theta_ei_js_ns[i][n_i] = theta_ei_js_n_pls.AtVec(i)
-				self.q_s_js_ns[i][n_i] = q_s_js_n_pls.AtVec(i)
-			}
+		}
+		for j := range self._id_bdry_js {
+			self.theta_ei_js_ns[j][n_i] = theta_ei_js_n_pls.AtVec(j)
+			self.q_s_js_ns[j][n_i] = q_s_js_n_pls.AtVec(j)
+		}
 
-			// 次の時刻に引き渡さない値
-			for i := 0; i < r; i++ {
-				self.theta_ot[i][n_i] = theta_ot_is_n_pls.AtVec(i)
-			}
+		// 次の時刻に引き渡さない値
+		for i := range self._id_rm_is {
+			self.theta_ot[i][n_i] = theta_ot_is_n_pls.AtVec(i)
+		}
+		for j := range self._id_bdry_js {
 			self.theta_s_js_ns.SetCol(n_i, theta_s_js_n_pls.RawVector().Data)
-			for i := 0; i < r; i++ {
-				self.theta_rear_js_ns[i][n_i] = theta_rear_js_n_pls.AtVec(i)
-			}
+			self.theta_rear_js_ns[j][n_i] = theta_rear_js_n_pls.AtVec(j)
+			self.f_cvl_js_ns[j][n_i] = f_cvl_js_n_pls.AtVec(j)
 		}
 	}
 
@@ -506,8 +509,7 @@ func (self *Recorder) recording(
 		// 平均値出力のステップ番号
 		n_a := n
 
-		r, _ := theta_r_is_n_pls.Dims()
-		for i := 0; i < r; i++ {
+		for i := range self._id_rm_is {
 			// 次の時刻に引き渡す値
 			self.operation_mode_is_ns[i][n_a] = operation_mode_is_n[i]
 
@@ -610,7 +612,7 @@ func (r *Recorder) export_pd() (string, string) {
 				r.q_c_js_ns.At(j, n),
 				r.q_i_sol_s_ns_js[j][n],
 				r.q_s_js_ns[j][n],
-				0.0,
+				r.f_cvl_js_ns[j][n],
 			))
 		}
 
