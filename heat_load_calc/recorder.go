@@ -365,7 +365,7 @@ func (r *Recorder) post_recording(rms *Rooms, bs *Boundaries, f_mrt_is_js *mat.D
 	var temp3 mat.Dense
 	temp3.Mul(bs.p_js_is, r.theta_r_is_ns)
 	temp3.Sub(&temp3, r.theta_s_js_ns)
-	__ScaleRows(&temp3, bs.h_s_r_js)
+	__ScaleRows(&temp3, bs.h_s_c_js)
 	__ScaleRows(&temp3, bs.a_s_js)
 	r.q_c_js_ns = &temp3
 	// ss.h_s_c_js * ss.a_s_js * (np.dot(ss.p_js_is, r.theta_r_is_ns) - r.theta_s_js_ns)
