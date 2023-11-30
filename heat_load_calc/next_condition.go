@@ -60,86 +60,98 @@ func get_next_temp_and_load(
 	// 係数 k, W, [i, 1], float型
 	k := brc_ot_is_n
 
-	// 室温指定を表す係数, [i, 1], int型
+	// 室温指定を表す係数 theta_set, [i, 1], int型
 	// 指定する = 0, 指定しない = 1
 	// 室温を指定しない場合は、 operation_mode が STOP_CLOSE or STOP_OPEN の場合である。
 	// 後で再計算する際に、負荷が機器容量を超えている場合は、最大暖房／冷房負荷で処理されることになるため、
 	// 室温を指定しない場合は、この限りではない。
-	if __next_temp_and_load__nt == nil {
-		__next_temp_and_load__nt = mat.NewVecDense(roomShape, nil)
-	}
-	nt := __next_temp_and_load__nt
-	for i := 0; i < roomShape; i++ {
-		if operation_mode_is_n[i] == HEATING || operation_mode_is_n[i] == COOLING {
-			nt.SetVec(i, 0) // 室温を指定する
-		} else {
-			nt.SetVec(i, 1) // 室温を指定しない
-		}
-	}
-
+	// ---
+	// nt:
 	// nt = 0 （室温を指定する） に対応する要素に、ターゲットとなるOTを代入する。
 	// nt = 1 （室温を指定しない）場合は、theta_set は 0 にしなければならない。
-	if __next_temp_and_load__theta_set == nil {
-		__next_temp_and_load__theta_set = mat.NewVecDense(roomShape, nil)
-	}
-	theta_set := __next_temp_and_load__theta_set
-	for i := 0; i < roomShape; i++ {
-		if operation_mode_is_n[i] == HEATING {
-			val := theta_lower_target_is_n.AtVec(i)*ac_demand_is_n.AtVec(i) + theta_natural_is_n[i]*(1.0-ac_demand_is_n.AtVec(i))
-			theta_set.SetVec(i, val)
-		} else if operation_mode_is_n[i] == COOLING {
-			val := theta_upper_target_is_n.AtVec(i)*ac_demand_is_n.AtVec(i) + theta_natural_is_n[i]*(1.0-ac_demand_is_n.AtVec(i))
-			theta_set.SetVec(i, val)
-		}
-	}
-
-	// 対流空調指定を表す係数, [i, 1], int型
+	// ---
+	// 対流空調指定を表す係数 c , [i, 1], int型
 	// 指定する = 0, 指定しない = 1
 	// 対流空調を指定しない場合は、対流空調をしている場合に相当するので、
 	//   operation_mode が　HEATING でかつ、 is_radiative_heating_is が false の場合か、
 	//   operation_mode が COOLING でかつ、 is_radiative_cooling_is が false の場合
 	// のどちらかである。
-	if __next_temp_and_load__c == nil {
-		__next_temp_and_load__c = mat.NewVecDense(roomShape, nil)
-	}
-	c := __next_temp_and_load__c
-	for i := 0; i < roomShape; i++ {
-		if (operation_mode_is_n[i] == HEATING && !is_radiative_heating_is[i]) ||
-			(operation_mode_is_n[i] == COOLING && !is_radiative_cooling_is[i]) {
-			c.SetVec(i, 1)
-		} else {
-			c.SetVec(i, 0)
-		}
-	}
-
-	// c = 0 （対流空調を指定する）に対応する要素に、0.0 を代入する。
-	// 対流空調を指定する場合は空調をしていないことに相当するため。ただし、後述する、最大能力で動く場合は、その値を代入することになる。
-	// 対流空調を指定しない場合は、 lc_set には 0.0 を入れなければならない。
-	// 結果として、ここでは、あらゆるケースで 0.0 が代入される。
-	if __next_temp_and_load__lc_set == nil {
-		__next_temp_and_load__lc_set = mat.NewVecDense(roomShape, nil)
-	}
-	lc_set := __next_temp_and_load__lc_set
-	lc_set.Zero()
-
-	// 放射空調指定を表す係数, [i, 1], int型
+	// ---
+	// 放射空調指定を表す係数 r, [i, 1], int型
 	// 指定する = 0, 指定しない = 1
 	// 放射空調を指定しない場合は、放射空調をしている場合に相当するので、
 	//   operation_mode が　HEATING でかつ、 is_radiative_heating_is が true の場合か、
 	//   operation_mode が COOLING でかつ、 is_radiative_cooling_is が true の場合
 	// のどちらかである。
+	if __next_temp_and_load__nt == nil {
+		__next_temp_and_load__nt = mat.NewVecDense(roomShape, nil)
+	}
+	if __next_temp_and_load__theta_set == nil {
+		__next_temp_and_load__theta_set = mat.NewVecDense(roomShape, nil)
+	}
+	if __next_temp_and_load__c == nil {
+		__next_temp_and_load__c = mat.NewVecDense(roomShape, nil)
+	}
 	if __next_temp_and_load__r == nil {
 		__next_temp_and_load__r = mat.NewVecDense(roomShape, nil)
 	}
 	r := __next_temp_and_load__r
+	c := __next_temp_and_load__c
+	nt := __next_temp_and_load__nt
+	theta_set := __next_temp_and_load__theta_set
 	for i := 0; i < roomShape; i++ {
-		if (operation_mode_is_n[i] == HEATING && is_radiative_heating_is[i]) ||
-			(operation_mode_is_n[i] == COOLING && is_radiative_cooling_is[i]) {
-			r.SetVec(i, 1)
+		if operation_mode_is_n[i] == HEATING &&
+			theta_natural_is_n[i] < theta_lower_target_is_n.AtVec(i) {
+			// 室温指定係数
+			nt.SetVec(i, 0)
+
+			// 室温指定
+			val := theta_lower_target_is_n.AtVec(i)*ac_demand_is_n.AtVec(i) + theta_natural_is_n[i]*(1.0-ac_demand_is_n.AtVec(i))
+			theta_set.SetVec(i, val)
+
+			// 対流空調指定 c / 放射空調指定 r
+			if is_radiative_heating_is[i] {
+				c.SetVec(i, 0)
+				r.SetVec(i, 1)
+			} else {
+				c.SetVec(i, 1)
+				r.SetVec(i, 0)
+			}
+		} else if operation_mode_is_n[i] == COOLING &&
+			theta_upper_target_is_n.AtVec(i) < theta_natural_is_n[i] {
+
+			// 室温指定係数
+			nt.SetVec(i, 0)
+
+			// 室温指定
+			val := theta_upper_target_is_n.AtVec(i)*ac_demand_is_n.AtVec(i) + theta_natural_is_n[i]*(1.0-ac_demand_is_n.AtVec(i))
+			theta_set.SetVec(i, val)
+
+			// 対流空調指定 c / 放射空調指定 r
+			if is_radiative_cooling_is[i] {
+				c.SetVec(i, 0)
+				r.SetVec(i, 1)
+			} else {
+				c.SetVec(i, 1)
+				r.SetVec(i, 0)
+			}
 		} else {
+			// 室温指定係数
+			nt.SetVec(i, 1) // 室温を指定しない
+			// 室温指定
+			theta_set.SetVec(i, 0.0)
+			// 対流空調指定 c
+			c.SetVec(i, 0)
+			// 放射空調指定
 			r.SetVec(i, 0)
 		}
 	}
+
+	if __next_temp_and_load__lc_set == nil {
+		__next_temp_and_load__lc_set = mat.NewVecDense(roomShape, nil)
+	}
+	lc_set := __next_temp_and_load__lc_set
+	lc_set.Zero()
 
 	// r = 0 （放射空調を指定する）に対応する要素に、0.0 を代入する。
 	// 放射空調を指定する場合は空調をしていないことに相当するため。ただし、後述する、最大能力で動く場合は、その値を代入することになる。
