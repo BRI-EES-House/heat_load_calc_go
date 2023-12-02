@@ -171,11 +171,11 @@ func NewSequence(
 	}
 }
 
-func (s *Sequence) run_tick(n int, nn int, nn_plus int, c_n *Conditions, recorder *Recorder) *Conditions {
+func (s *Sequence) run_tick(n int, nn int, c_n *Conditions, recorder *Recorder) *Conditions {
 	ss := s.pre_calc_parameters
 	delta_t := s._delta_t
 
-	return _run_tick(s, n, nn, nn_plus, delta_t, ss, c_n, recorder)
+	return _run_tick(s, n, nn, delta_t, ss, c_n, recorder)
 }
 
 func (s *Sequence) run_tick_ground(gc_n *GroundConditions, n int, nn int) *GroundConditions {
@@ -208,7 +208,7 @@ Returns:
 
 	次の時刻にわたす状態量
 */
-func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *PreCalcParameters, c_n *Conditions, recorder *Recorder) *Conditions {
+func _run_tick(self *Sequence, n int, nn int, delta_t float64, ss *PreCalcParameters, c_n *Conditions, recorder *Recorder) *Conditions {
 	// ----------- ここから人体発熱・人体発湿 -----------
 
 	// ステップnからステップn+1における室iの1人あたりの人体発熱, W, [i, 1]
@@ -236,7 +236,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.bs.k_ei_js_js,
 		c_n.theta_ei_js_n,
 		self.bs.k_eo_js,
-		self.bs.theta_o_eqv_js_ns.ColView(nn_plus),
+		self.bs.theta_o_eqv_js_ns.ColView(nn),
 		self.bs.k_s_r_js,
 		c_n.theta_r_is_n,
 	)
@@ -245,7 +245,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 	// 式(建物全般のパラメータ:2)
 	v_leak_is_n := self.building.get_v_leak_is_n(
 		c_n.theta_r_is_n,
-		self.weather.theta_o_ns_plus[nn_plus],
+		self.weather.theta_o_ns_plus[nn],
 		self.rms.v_rm_is,
 	)
 
@@ -297,16 +297,16 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.rms.v_rm_is,
 		self.rms.c_sh_frt_is,
 		delta_t,
-		ss.f_wsc_js_ns.ColView(nn_plus+1),
+		ss.f_wsc_js_ns.ColView(nn+1),
 		f_wsv_js_n_pls,
 		self.rms.g_sh_frt_is,
 		self.bs.h_s_c_js,
 		self.bs.p_is_js,
 		self.scd.q_gen_is_ns.Get(nn),
 		q_hum_is_n,
-		ss.q_sol_frt_is_ns.ColView(nn_plus),
+		ss.q_sol_frt_is_ns.ColView(nn),
 		c_n.theta_frt_is_n,
-		self.weather.theta_o_ns_plus[nn_plus+1],
+		self.weather.theta_o_ns_plus[nn+1],
 		c_n.theta_r_is_n,
 		v_vent_out_non_nv_is_n,
 		self.rms.v_vent_ntr_set_is,
@@ -333,7 +333,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 	// ステップn+1における室iの係数 XC, [i, 1]
 	f_xc_is_n_pls := get_f_xc_is_n_pls(
 		ss.f_mrt_hum_is_js,
-		ss.f_wsc_js_ns.ColView(nn_plus+1),
+		ss.f_wsc_js_ns.ColView(nn+1),
 		f_wsv_js_n_pls,
 		ss.f_xot_is_is_n_pls, //NOTE: 計算仕様では毎時計算になっている
 		ss.k_r_is_n,
@@ -366,7 +366,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		c_n.x_frt_is_n,
 		self.scd.x_gen_is_ns.Get(nn),
 		x_hum_is_n,
-		self.weather.x_o_ns_plus.AtVec(nn_plus+1),
+		self.weather.x_o_ns_plus.AtVec(nn+1),
 		c_n.x_r_is_n,
 		v_vent_out_non_nv_is_n,
 		self.rms.v_vent_ntr_set_is,
@@ -403,10 +403,10 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 
 	var theta_s_ntr_non_nv_js_n_pls, theta_s_ntr_nv_js_n_pls mat.VecDense
 	theta_s_ntr_non_nv_js_n_pls.MulVec(ss.f_wsr_js_is, &theta_r_ntr_non_nv_is_n_pls)
-	theta_s_ntr_non_nv_js_n_pls.AddVec(&theta_s_ntr_non_nv_js_n_pls, ss.f_wsc_js_ns.ColView(nn_plus+1))
+	theta_s_ntr_non_nv_js_n_pls.AddVec(&theta_s_ntr_non_nv_js_n_pls, ss.f_wsc_js_ns.ColView(nn+1))
 	theta_s_ntr_non_nv_js_n_pls.AddVec(&theta_s_ntr_non_nv_js_n_pls, f_wsv_js_n_pls)
 	theta_s_ntr_nv_js_n_pls.MulVec(ss.f_wsr_js_is, &theta_r_ntr_nv_is_n_pls)
-	theta_s_ntr_nv_js_n_pls.AddVec(&theta_s_ntr_nv_js_n_pls, ss.f_wsc_js_ns.ColView(nn_plus+1))
+	theta_s_ntr_nv_js_n_pls.AddVec(&theta_s_ntr_nv_js_n_pls, ss.f_wsc_js_ns.ColView(nn+1))
 	theta_s_ntr_nv_js_n_pls.AddVec(&theta_s_ntr_nv_js_n_pls, f_wsv_js_n_pls)
 
 	var theta_mrt_hum_ntr_non_nv_is_n_pls, theta_mrt_hum_ntr_nv_is_n_pls mat.VecDense
@@ -425,7 +425,6 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 
 	// ステップ n における室 i の運転モード, [i, 1]
 	operation_mode_is_n, all_stop := self.op.get_operation_mode_is_n(
-		n,
 		nn,
 		self.es.is_radiative_heating_is,
 		self.es.is_radiative_cooling_is,
@@ -482,7 +481,6 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 			theta_r_ntr_is_n_pls,
 			theta_mrt_hum_ntr_is_n_pls,
 			x_r_ntr_is_n_pls,
-			n,
 			nn,
 			self.es.is_radiative_heating_is,
 			self.es.is_radiative_cooling_is,
@@ -600,7 +598,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.es.q_rs_h_max_is,
 		self.es.q_rs_c_max_is,
 		theta_r_ot_ntr_is_n_pls,
-		n,
+		nn,
 	)
 
 	// 式(2.6) 室温計算
@@ -617,7 +615,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 	// ステップ n+1 における境界 j の表面温度, degree C, [j, 1]
 	theta_s_js_n_pls := get_theta_s_js_n_pls(
 		f_wsb_js_is_n_pls,
-		ss.f_wsc_js_ns.ColView(nn_plus+1),
+		ss.f_wsc_js_ns.ColView(nn+1),
 		ss.f_wsr_js_is,
 		f_wsv_js_n_pls,
 		l_rs_is_n,
@@ -626,12 +624,11 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 
 	// 式(2.4) 備品等の温度計算
 	// ステップ n+1 における室 i　の備品等の温度, degree C, [i, 1]
-	// TODO: q_sol_frt_is_ns の値は n+1 の値を使用するべき？
 	theta_frt_is_n_pls := get_theta_frt_is_n_pls(
 		self.rms.c_sh_frt_is,
 		delta_t,
 		self.rms.g_sh_frt_is,
-		ss.q_sol_frt_is_ns.ColView(nn_plus),
+		ss.q_sol_frt_is_ns.ColView(nn),
 		c_n.theta_frt_is_n,
 		theta_r_is_n_pls,
 	)
@@ -654,7 +651,7 @@ func _run_tick(self *Sequence, n int, nn int, nn_plus int, delta_t float64, ss *
 		self.bs.h_s_r_js,
 		l_rs_is_n,
 		self.bs.p_js_is,
-		ss.q_s_sol_js_ns.ColView(nn_plus+1),
+		ss.q_s_sol_js_ns.ColView(nn+1),
 		theta_r_is_n_pls,
 		theta_s_js_n_pls,
 	)

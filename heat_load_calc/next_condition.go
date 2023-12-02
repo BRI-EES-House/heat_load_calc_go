@@ -25,16 +25,8 @@ func get_next_temp_and_load(
 	lr_h_max_cap_is []float64,
 	lr_cs_max_cap_is []float64,
 	theta_natural_is_n []float64,
-	n int,
+	nn int,
 ) (*mat.VecDense, *mat.VecDense, *mat.VecDense) {
-
-	var nn int
-	if n < 0 {
-		c := ac_demand_is_ns.Len()
-		nn = n + c
-	} else {
-		nn = n
-	}
 	ac_demand_is_n := ac_demand_is_ns.Get(nn)
 
 	roomShape := len(operation_mode_is_n)

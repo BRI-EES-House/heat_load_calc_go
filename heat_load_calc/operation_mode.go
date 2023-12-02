@@ -191,7 +191,6 @@ func (o *Operation) ac_config() []ACConfigJson {
 	        ステップnの室iにおける運転状態, [i, 1]
 */
 func (self *Operation) get_operation_mode_is_n(
-	n int,
 	nn int,
 	is_radiative_heating_is []bool,
 	is_radiative_cooling_is []bool,
@@ -265,7 +264,6 @@ func (self *Operation) get_theta_target_is_n(
 	theta_r_is_n []float64,
 	theta_mrt_hum_is_n []float64,
 	x_r_ntr_is_n_pls []float64,
-	n int,
 	nn int,
 	is_radiative_heating_is []bool,
 	is_radiative_cooling_is []bool,
