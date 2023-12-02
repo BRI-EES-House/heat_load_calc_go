@@ -740,14 +740,14 @@ func _run_tick(self *Sequence, n int, nn int, delta_t float64, ss *PreCalcParame
 
 	c_n.operation_mode_is_n = operation_mode_is_n
 	c_n.theta_r_is_n.CopyVec(theta_r_is_n_pls)
-	c_n.theta_mrt_hum_is_n = theta_mrt_hum_is_n_pls
-	c_n.x_r_is_n = x_r_is_n_pls
-	c_n.theta_dsh_srf_a_js_ms_n = theta_dsh_s_a_js_ms_n_pls
-	c_n.theta_dsh_srf_t_js_ms_n = theta_dsh_s_t_js_ms_n_pls
-	c_n.q_s_js_n = q_s_js_n_pls
-	c_n.theta_frt_is_n = theta_frt_is_n_pls
-	c_n.x_frt_is_n = x_frt_is_n_pls
-	c_n.theta_ei_js_n = theta_ei_js_n_pls
+	c_n.theta_mrt_hum_is_n.CopyVec(theta_mrt_hum_is_n_pls)
+	c_n.x_r_is_n.CopyVec(x_r_is_n_pls)
+	c_n.theta_dsh_srf_a_js_ms_n.Copy(theta_dsh_s_a_js_ms_n_pls)
+	c_n.theta_dsh_srf_t_js_ms_n.Copy(theta_dsh_s_t_js_ms_n_pls)
+	c_n.q_s_js_n.CopyVec(q_s_js_n_pls)
+	c_n.theta_frt_is_n.CopyVec(theta_frt_is_n_pls)
+	c_n.x_frt_is_n.CopyVec(x_frt_is_n_pls)
+	c_n.theta_ei_js_n.CopyVec(theta_ei_js_n_pls)
 
 	return c_n
 }

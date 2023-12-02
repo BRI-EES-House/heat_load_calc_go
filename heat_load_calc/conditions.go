@@ -5,7 +5,7 @@ import "gonum.org/v1/gonum/mat"
 type Conditions struct {
 	operation_mode_is_n     []OperationMode // ステップnにおける室iの運転状態, [i, 1]
 	theta_r_is_n            *mat.VecDense   //ステップnにおける室iの空気温度, degree C, [i, 1]
-	theta_mrt_hum_is_n      mat.Vector      // ステップnにおける室iの在室者の平均放射温度, degree C, [i, 1]
+	theta_mrt_hum_is_n      *mat.VecDense   // ステップnにおける室iの在室者の平均放射温度, degree C, [i, 1]
 	x_r_is_n                *mat.VecDense   // ステップnにおける室iの絶対湿度, kg/kgDA, [i, 1]
 	theta_dsh_srf_a_js_ms_n *mat.Dense      // ステップnの境界jにおける項別公比法の指数項mの吸熱応答の項別成分, degree C, [j, m] (m=12)
 	theta_dsh_srf_t_js_ms_n *mat.Dense      // ステップnの境界jにおける項別公比法の指数項mの貫流応答の項別成分, degree C, [j, m] (m=12)
@@ -18,7 +18,7 @@ type Conditions struct {
 func NewConditions(
 	operation_mode_is_n []OperationMode,
 	theta_r_is_n *mat.VecDense,
-	theta_mrt_hum_is_n mat.Vector,
+	theta_mrt_hum_is_n *mat.VecDense,
 	x_r_is_n *mat.VecDense,
 	theta_dsh_srf_a_js_ms_n *mat.Dense,
 	theta_dsh_srf_t_js_ms_n *mat.Dense,
