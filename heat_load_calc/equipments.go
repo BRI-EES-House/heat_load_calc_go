@@ -465,7 +465,9 @@ func (eq *Equipments) make_get_f_l_cl_funcs() func(*mat.VecDense, *mat.VecDense,
 		}
 
 		f_l_cl_wgt_is_is_n := &__f_l_cl_wgt_is_is_n
+		f_l_cl_wgt_is_is_n.Zero()
 		f_l_cl_cst_is_n := &__f_l_cl_cst_is_n
+		f_l_cl_cst_is_n.Zero()
 
 		for _, ce := range eq._ces {
 			ls_a, ls_b := eq._get_ls_a_ls_b(
@@ -569,8 +571,10 @@ func (eq *Equipments) _func_rac(
 		__brxc_is = mat.NewVecDense(n_rm, nil)
 	}
 
-	brmx_is_is := __brmx_is_is
-	brxc_is := __brxc_is
+	brmx_is_is := mat.NewDense(n_rm, n_rm, nil)
+	brmx_is_is.Zero()
+	brxc_is := mat.NewVecDense(n_rm, nil)
+	brxc_is.Zero()
 
 	brmx_is_is.Set(ce.room_id, ce.room_id, brmx_rac_is)
 	brxc_is.SetVec(ce.room_id, brcx_rac_is)
