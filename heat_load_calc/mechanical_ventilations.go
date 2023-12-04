@@ -105,7 +105,7 @@ func (mvs *MechanicalVentilations) get_v_vent_int_is_is() *mat.Dense {
 			}
 		case NATURAL_LOOP:
 			r := v.root
-			for i := 1; i < len(r); i++ {
+			for i := 0; i < len(r); i++ {
 				var i_upstream int
 				if i == 0 {
 					i_upstream = len(r) - 1
