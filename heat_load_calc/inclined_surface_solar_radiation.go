@@ -219,10 +219,10 @@ func _get_i_hrz_ns(i_dn_ns, i_sky_ns, h_sun_ns []float64) []float64 {
    Args:
         h_sun_ns: ステップnにおける太陽高度, rad, [N+1]
         a_sun_ns: ステップnにおける太陽方位角, rad, [N+1]
-        drct_j: Direction Class
+        drct_j: 方位
 
    Returns:
-       ステップ n の境界 j における傾斜面に入射する太陽の入射角, rad, [n]
+       ステップ n の境界 j における傾斜面に入射する太陽の入射角, rad, [N+1]
 
    Notes:
        式(8), 式(9)

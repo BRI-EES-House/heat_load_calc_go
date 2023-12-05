@@ -16,23 +16,22 @@ import (
 )
 
 type Weather struct {
-	_a_sun_ns       []float64 // 外気温度, degree C, [n]
-	_h_sun_ns       []float64 // 外気絶対湿度, kg/kg(DA), [n]
-	_i_dn_ns        []float64 // 法線面直達日射量, W/m2, [n]
-	_i_sky_ns       []float64 // 水平面天空日射量, W/m2, [n]
-	_r_n_ns         []float64 // 夜間放射量, W/m2, [n]
-	_theta_o_ns     []float64 // 太陽高度, rad, [n]
-	_x_o_ns         []float64 // 太陽方位角, rad, [n]
-	_itv            Interval  // 時間間隔
-	a_sun_ns_plus   []float64
-	h_sun_ns_plus   []float64
-	i_dn_ns_plus    []float64
-	i_sky_ns_plus   []float64
-	r_n_ns_plus     []float64
-	theta_o_ns_plus []float64
-	x_o_ns_plus     *mat.VecDense
-
-	cos_phi_j_ns map[Direction][]float64 //ステップnにおける境界jの傾斜面に入射する太陽の入射角の余弦, -,  [N+1]
+	_a_sun_ns       []float64               // ステップ n における太陽高度, rad, [N]
+	_h_sun_ns       []float64               // ステップ n における太陽方位角, rad, [N]
+	_i_dn_ns        []float64               // ステップ n における法線面直達日射量, W/m2, [n]
+	_i_sky_ns       []float64               // ステップ n における水平面天空日射量, W/m2, [N]
+	_r_n_ns         []float64               // ステップ n における夜間放射量, W/m2, [N]
+	_theta_o_ns     []float64               // ステップ n における外気温度, degree C, [N]
+	_x_o_ns         []float64               // ステップ n における外気絶対湿度, kg/kg(DA), [N]
+	_itv            Interval                // 時間間隔
+	a_sun_ns_plus   []float64               // ステップ n における太陽高度, rad, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	h_sun_ns_plus   []float64               // ステップ n における太陽方位角, rad, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	i_dn_ns_plus    []float64               // ステップ n における法線面直達日射量, W/m2, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	i_sky_ns_plus   []float64               // ステップ n における水平面天空日射量, W/m2, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	r_n_ns_plus     []float64               // ステップ n における夜間放射量, W/m2, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	theta_o_ns_plus []float64               // ステップ n における外気温度, degree C, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	x_o_ns_plus     *mat.VecDense           // ステップ n における外気温度, degree C, [N+1] (先頭用途と最後尾の要素の値は同じ)
+	cos_phi_j_ns    map[Direction][]float64 // ステップ n における方位 dir の傾斜面に入射する太陽の入射角の余弦, -,  [N+1] (先頭用途と最後尾の要素の値は同じ)
 }
 
 /*

@@ -75,18 +75,18 @@ func calc(
 	log.Printf("助走計算（建物全体） (%d steps)\n", n_step_run_up_build)
 
 	// NOTE: XX_plusの配列はインデックスが負の場合に適切な位置を参照しているのか良く確認する。
-	nn = N - n_step_run_up_build
 	for n := -n_step_run_up_build; n < 0; n++ {
-		c_n = sqc.run_tick(n, nn, c_n, result)
-		nn++
+		c_n = sqc.run_tick(n, N, c_n, result)
 	}
+
+	// NOTE: 助走計算も記録が入っているが最終的に上書きされる
 
 	log.Printf("本計算 (%d steps)\n", n_step_main)
 
 	// TODO: recorder に1/1 0:00の瞬時状態値を書き込む
 	m := 1
 	for n := 0; n < n_step_main; n++ {
-		c_n = sqc.run_tick(n, n, c_n, result)
+		c_n = sqc.run_tick(n, N, c_n, result)
 		if n == int(float64(n_step_main)/12*float64(m)) {
 			log.Printf("%d / 12 calculated.", m)
 			m++

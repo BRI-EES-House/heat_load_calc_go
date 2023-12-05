@@ -191,7 +191,7 @@ func (o *Operation) ac_config() []ACConfigJson {
 	        ステップnの室iにおける運転状態, [i, 1]
 */
 func (self *Operation) get_operation_mode_is_n(
-	nn int,
+	nn_a int,
 	is_radiative_heating_is []bool,
 	is_radiative_cooling_is []bool,
 	met_is []float64,
@@ -205,9 +205,9 @@ func (self *Operation) get_operation_mode_is_n(
 	x_r_ntr_nv_is_n_pls []float64,
 ) ([]OperationMode, bool) {
 
-	upper_target_is_n := self._upper_target_is_ns.Get(nn)
-	lower_target_is_n := self._lower_target_is_ns.Get(nn)
-	ac_demand_is_n := self._ac_demand_is_ns.Get(nn)
+	upper_target_is_n := self._upper_target_is_ns.Get(nn_a)
+	lower_target_is_n := self._lower_target_is_ns.Get(nn_a)
+	ac_demand_is_n := self._ac_demand_is_ns.Get(nn_a)
 
 	var x_cooling_is_n_pls, x_window_open_is_n_pls, x_heating_is_n_pls []float64
 
@@ -264,13 +264,13 @@ func (self *Operation) get_theta_target_is_n(
 	theta_r_is_n []float64,
 	theta_mrt_hum_is_n []float64,
 	x_r_ntr_is_n_pls []float64,
-	nn int,
+	nn_a int,
 	is_radiative_heating_is []bool,
 	is_radiative_cooling_is []bool,
 	met_is []float64,
 ) (*mat.VecDense, *mat.VecDense, []float64, []float64) {
-	lower_target_is_n := self._lower_target_is_ns.Get(nn)
-	upper_target_is_n := self._upper_target_is_ns.Get(nn)
+	lower_target_is_n := self._lower_target_is_ns.Get(nn_a)
+	upper_target_is_n := self._upper_target_is_ns.Get(nn_a)
 
 	// ステップnの室iにおけるClo値, [i, 1]
 	clo_is_n := get_clo_is_ns(operation_mode_is_n)

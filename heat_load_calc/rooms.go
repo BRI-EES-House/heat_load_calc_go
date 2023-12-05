@@ -19,18 +19,18 @@ type Room struct {
 
 type Rooms struct {
 	n_rm              int           // 室の数
-	rms               []Room        // 室
-	id_rm_is          []int         // 空間のID, [i, 1]
-	name_rm_is        []string      // 室iの名前, [i, 1]
-	sub_name_rm_is    []string      // 室iの名前2, [i, 1]
-	a_f_rm_is         *mat.VecDense // 室iの面積, m2, [i, 1]
-	v_rm_is           *mat.VecDense // 室iの容積, m3, [i, 1]
-	c_sh_frt_is       *mat.VecDense // 室iの備品等の熱容量, J/K, [i, 1]
-	g_sh_frt_is       *mat.VecDense // 室iの空気と備品等間の熱コンダクタンス, W/K, [i, 1]
-	c_lh_frt_is       *mat.VecDense // 室iの備品等の湿気容量, kg/(kg/kgDA), [i, 1]
-	g_lh_frt_is       *mat.VecDense // 室iの空気と備品等間の湿気コンダクタンス, kg/(s (kg/kgDA)), [i, 1]
-	v_vent_ntr_set_is []float64     // 室iの自然風利用時の換気量, m3/s, [i, 1]
-	met_is            []float64     // 室iの在室者のMet値, [i, 1]
+	rms               []Room        // 室, [I]
+	id_rm_is          []int         // 空間のID, [I]
+	name_rm_is        []string      // 室 i の名前, [I]
+	sub_name_rm_is    []string      // 室 i の名前2, [I]
+	a_f_rm_is         *mat.VecDense // 室 i の面積, m2, [I]
+	v_rm_is           *mat.VecDense // 室 i の容積, m3, [I]
+	c_sh_frt_is       *mat.VecDense // 室 i の備品等の熱容量, J/K, [I]
+	g_sh_frt_is       *mat.VecDense // 室 i の空気と備品等間の熱コンダクタンス, W/K, [I]
+	c_lh_frt_is       *mat.VecDense // 室 i の備品等の湿気容量, kg/(kg/kgDA), [I]
+	g_lh_frt_is       *mat.VecDense // 室 i の空気と備品等間の湿気コンダクタンス, kg/(s (kg/kgDA)), [I]
+	v_vent_ntr_set_is []float64     // 室 i の自然風利用時の換気量, m3/s, [I]
+	met_is            []float64     // 室 i の在室者のMet値, [I]
 }
 
 func NewRooms(ds []RoomJson) (*Rooms, error) {

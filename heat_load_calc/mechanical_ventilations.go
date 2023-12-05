@@ -25,8 +25,8 @@ type MechanicalVentilation struct {
 type MechanicalVentilations struct {
 	_mechanical_ventilations []*MechanicalVentilation // 機械換気の要素
 	_n_rm                    int                      // 室数
-	v_vent_int_is_is         *mat.Dense               // 室間換気量, m3/h
-	v_vent_mec_general_is    []float64                // 室ごとの機械換気量, m3/h
+	v_vent_int_is_is         *mat.Dense               // 室間換気量, m3/h, [I, I]
+	v_vent_mec_general_is    []float64                // 室ごとの機械換気量, m3/h, [I]
 }
 
 func NewMechanicalVentilations(vs []MechanicalVentilationJson, n_rm int) *MechanicalVentilations {

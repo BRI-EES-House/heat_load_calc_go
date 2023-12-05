@@ -19,7 +19,7 @@ func get_q_trs_sol_j_ns_for_not(w *Weather) []float64 {
        wdw_j: 境界jの Window Class
        w: Weather Class
    Returns:
-       ステップnにおける境界jの透過日射量, W, [N+1]
+       ステップ n における境界 j の透過日射量, W, [N+1]
 */
 func get_q_trs_sol_j_ns_for_transparent_sun_striked(
 	drct_j Direction,
@@ -56,19 +56,19 @@ func get_q_trs_sol_j_ns_for_transparent_sun_striked(
 
 	q_trs_sol_j_ns := make([]float64, len(cos_phi_j_ns))
 	for i := 0; i < len(cos_phi_j_ns); i++ {
-		// ステップnにおける境界jの窓の直達日射に対する日射透過率, -, [N+1]
+		// ステップ n における境界 j の窓の直達日射に対する日射透過率, -, [N+1]
 		tau_w_d_j_ns := wdw_j.get_tau_w_d_j_ns(cos_phi_j_ns[i])
 
-		// 直達日射に対する透過日射量, W/m2, [N+1]
+		// ステップ n における境界 j の窓の直達日射に対する透過日射量, W/m2, [N+1]
 		q_trs_sol_dn_j_ns := tau_w_d_j_ns * (1.0 - f_ss_d_j_ns[i]) * i_s_dn_j_ns[i]
 
-		// 天空日射に対する透過日射量, W/m2, [N+1]
+		// ステップ n における境界 j の天空日射に対する透過日射量, W/m2, [N+1]
 		q_trs_sol_sky_j_ns := tau_w_s_j * (1.0 - f_ss_s_j_ns) * i_s_sky_j_ns[i]
 
-		// 地盤反射日射に対する透過日射量, W/m2, [N+1]
+		// ステップ n における境界 j の地盤反射日射に対する透過日射量, W/m2, [N+1]
 		q_trs_sol_ref_j_ns := tau_w_r_j * (1.0 - f_ss_r_j_ns) * i_s_ref_j_ns[i]
 
-		// 透過日射量, W, [N+1]
+		// ステップ n における境界 j の透過日射量, W, [N+1]
 		q_trs_sol_j_ns[i] = (q_trs_sol_dn_j_ns + q_trs_sol_sky_j_ns + q_trs_sol_ref_j_ns) * a_s_j
 	}
 

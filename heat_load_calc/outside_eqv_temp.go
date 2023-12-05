@@ -11,7 +11,7 @@ import (
        w: Weather クラス
 
    Returns:
-       ステップnにおけるの境界jの相当外気温度, degree C, [N+1]
+       ステップ n におけるの境界 j の相当外気温度, degree C, [N+1]
 
    Notes:
        本来であれば、間仕切り壁において相当外気温度は定義できない概念ではあるが、
@@ -37,7 +37,7 @@ func get_theta_o_eqv_j_ns_for_internal(w *Weather) *mat.VecDense {
        w: Weather クラス
 
    Returns:
-       ステップnにおける境界jの相当外気温度, degree C, [N+1]
+       ステップ n における境界 j の相当外気温度, degree C, [N+1]
    Notes:
        eq.2
 */
@@ -64,7 +64,7 @@ func get_theta_o_eqv_j_ns_for_external_general_part_and_external_opaque_part(
 	// ステップ n における境界 j の傾斜面の夜間放射量, W/m2, [n]
 	i_s_dn_j_ns, i_s_sky_j_ns, i_s_ref_j_ns, r_s_n_j_ns := get_i_is_j_ns(w, drct_j)
 
-	// ステップnにおける境界jの相当外気温度, ℃, [N+1]
+	// ステップnにおける境界jの相当外気温度, degree C, [N+1]
 	// 一般部位・不透明な開口部の場合、日射・長波長放射を考慮する。
 	// eq.2
 	theta_o_eqv_j_ns := mat.NewVecDense(w.number_of_data_plus(), nil)
@@ -96,7 +96,7 @@ func get_theta_o_eqv_j_ns_for_external_general_part_and_external_opaque_part(
        w: Weather クラス
 
    Returns:
-       ステップnにおける境界jの相当外気温度, degree C, [N+1]
+       ステップ n における境界 j の相当外気温度, degree C, [N+1]
    Notes:
        eq.3~7
 */
@@ -157,7 +157,7 @@ func get_theta_o_eqv_j_ns_for_external_transparent_part(
 		// eq.4
 		q_b_all_j_ns := (q_b_dn_j_ns + q_b_sky_j_ns + q_b_ref_j_ns)
 
-		// 室iの境界jの傾斜面のステップnにおける相当外気温度, ℃, [N+1]
+		// 室iの境界jの傾斜面のステップnにおける相当外気温度, degree C, [N+1]
 		// 透明な開口部の場合、透過日射はガラス面への透過の項で扱うため、ここでは吸収日射、長波長放射のみ考慮する。
 		// eq.3
 		theta_o_sol_i_j_ns[i] = theta_o_ns_plus[i] - eps_r_o_j*r_s_n_j_ns[i]*r_s_o_j + q_b_all_j_ns/u_j
@@ -173,7 +173,7 @@ func get_theta_o_eqv_j_ns_for_external_transparent_part(
        w: Weather クラス
 
    Returns:
-       ステップnにおける境界jの相当外気温度, degree C, [N+1]
+       ステップ n における境界 j の相当外気温度, degree C, [N+1]
    Notes:
        eq.8
 */
@@ -183,13 +183,13 @@ func get_theta_o_eqv_j_ns_for_external_not_sun_striked(w *Weather) *mat.VecDense
 }
 
 /*
-地盤の相当外気温度を計算する。
+	地盤の相当外気温度を計算する。
 
     Args:
         w: Weather クラス
 
     Returns:
-        ステップ n における室 i の境界 j の傾斜面の相当外気温度, ℃, [N+1]
+        ステップ n における室 i の境界 j の傾斜面の相当外気温度, degree C, [N+1]
 */
 func get_theta_o_eqv_j_ns_for_ground(w *Weather) *mat.VecDense {
 	theta_o_ns_average := w.get_theta_o_ave()

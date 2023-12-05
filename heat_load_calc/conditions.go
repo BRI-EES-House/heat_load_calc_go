@@ -3,16 +3,16 @@ package heat_load_calc
 import "gonum.org/v1/gonum/mat"
 
 type Conditions struct {
-	operation_mode_is_n     []OperationMode // ステップnにおける室iの運転状態, [i, 1]
-	theta_r_is_n            *mat.VecDense   //ステップnにおける室iの空気温度, degree C, [i, 1]
-	theta_mrt_hum_is_n      *mat.VecDense   // ステップnにおける室iの在室者の平均放射温度, degree C, [i, 1]
-	x_r_is_n                *mat.VecDense   // ステップnにおける室iの絶対湿度, kg/kgDA, [i, 1]
-	theta_dsh_srf_a_js_ms_n *mat.Dense      // ステップnの境界jにおける項別公比法の指数項mの吸熱応答の項別成分, degree C, [j, m] (m=12)
-	theta_dsh_srf_t_js_ms_n *mat.Dense      // ステップnの境界jにおける項別公比法の指数項mの貫流応答の項別成分, degree C, [j, m] (m=12)
-	q_s_js_n                *mat.VecDense   // ステップnの境界jにおける表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]
-	theta_frt_is_n          *mat.VecDense   // ステップnの室iにおける家具の温度, degree C, [i, 1]
-	x_frt_is_n              *mat.VecDense   // ステップnの室iにおける家具の絶対湿度, kg/kgDA, [i, 1]
-	theta_ei_js_n           *mat.VecDense   // [i, 1]
+	operation_mode_is_n     []OperationMode // ステップ n における室 i の運転状態, [I]
+	theta_r_is_n            *mat.VecDense   // ステップ n における室 i の空気温度, degree C, [I]
+	theta_mrt_hum_is_n      *mat.VecDense   // ステップ n における室 i の在室者の平均放射温度, degree C, [I]
+	x_r_is_n                *mat.VecDense   // ステップ n における室 i の絶対湿度, kg/kgDA, [I]
+	theta_dsh_srf_a_js_ms_n *mat.Dense      // ステップ n の境界 j における項別公比法の指数項mの吸熱応答の項別成分, degree C, [J, 12]
+	theta_dsh_srf_t_js_ms_n *mat.Dense      // ステップ n の境界 j における項別公比法の指数項mの貫流応答の項別成分, degree C, [J, 12]
+	q_s_js_n                *mat.VecDense   // ステップ n の境界 j における表面熱流（壁体吸熱を正とする）, W/m2, [J]
+	theta_frt_is_n          *mat.VecDense   // ステップ n の室 i における家具の温度, degree C, [I]
+	x_frt_is_n              *mat.VecDense   // ステップ n の室 i における家具の絶対湿度, kg/kgDA, [I]
+	theta_ei_js_n           *mat.VecDense   // ステップ n の境界 j における等価温度 [J]
 }
 
 func NewConditions(
@@ -62,21 +62,21 @@ func initialize_conditions(n_spaces, n_bdries int) *Conditions {
 	}
 
 	// ステップnにおける室iの空気温度, degree C, [i, 1]
-	// 初期値を15℃とする。
+	// 初期値を15degree Cとする。
 	theta_r_is_n := mat.NewVecDense(total_number_of_spaces, nil)
 	for i := 0; i < total_number_of_spaces; i++ {
 		theta_r_is_n.SetVec(i, 15.0)
 	}
 
 	// ステップnにおける室iの在室者の平均放射温度, degree C, [i, 1]
-	// 初期値を15℃と設定する。
+	// 初期値を15degree Cと設定する。
 	theta_mrt_hum_is_n := mat.NewVecDense(total_number_of_spaces, nil)
 	for i := 0; i < total_number_of_spaces; i++ {
 		theta_mrt_hum_is_n.SetVec(i, 15.0)
 	}
 
 	// ステップnにおける室iの絶対湿度, kg/kgDA, [i, 1]
-	// 初期値を空気温度20℃相対湿度40%の時の値とする。
+	// 初期値を空気温度20degree C相対湿度40%の時の値とする。
 	x_r_is_n := mat.NewVecDense(total_number_of_spaces, nil)
 	initial_xr_in := get_x(get_p_vs(20.0) * 0.4)
 	for i := 0; i < total_number_of_spaces; i++ {
@@ -84,11 +84,11 @@ func initialize_conditions(n_spaces, n_bdries int) *Conditions {
 	}
 
 	// ステップnの統合された境界j*における指数項mの吸熱応答の項別成分, degree C, [j*, 12]
-	// 初期値を0.0℃とする。
+	// 初期値を0.0degree Cとする。
 	theta_dsh_srf_a_js_ms_n0 := mat.NewDense(total_number_of_bdry, 12, nil)
 
 	// ステップnの統合された境界j*における指数項mの貫流応答の項別成分, degree C, [j*, 12]
-	// 初期値を0.0℃とする。
+	// 初期値を0.0degree Cとする。
 	theta_dsh_srf_t_js_ms_n0 := mat.NewDense(total_number_of_bdry, 12, nil)
 
 	// ステップnの境界jにおける表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]
@@ -96,14 +96,14 @@ func initialize_conditions(n_spaces, n_bdries int) *Conditions {
 	q_srf_jstrs_n := mat.NewVecDense(total_number_of_bdry, nil)
 
 	// ステップnの室iにおける家具の温度, degree C, [i]
-	// 初期値を15℃とする。
+	// 初期値を15degree Cとする。
 	theta_frt_is_n := mat.NewVecDense(total_number_of_spaces, nil)
 	for i := 0; i < total_number_of_spaces; i++ {
 		theta_frt_is_n.SetVec(i, 15.0)
 	}
 
 	// ステップnの室iにおける家具の絶対湿度, kg/kgDA, [i, 1]
-	// 初期値を空気温度20℃相対湿度40%の時の値とする。
+	// 初期値を空気温度20degree C相対湿度40%の時の値とする。
 	x_frt_is_n := mat.NewVecDense(total_number_of_spaces, nil)
 	initial_x_frt_in := get_x(get_p_vs(20.0) * 0.4)
 	for i := 0; i < total_number_of_spaces; i++ {
@@ -136,11 +136,11 @@ func initialize_ground_conditions(n_grounds int) *GroundConditions {
 	}
 
 	// ステップnの統合された境界j*における指数項mの吸熱応答の項別成分, degree C, [j*, 12]
-	// 初期値を0.0℃とする。
+	// 初期値を0.0degree Cとする。
 	theta_dsh_srf_a_js_ms_n0 := mat.NewDense(n_grounds, 12, nil)
 
 	// ステップnの統合された境界j*における指数項mの貫流応答の項別成分, degree C, [j*, 12]
-	// 初期値を0.0℃とする。
+	// 初期値を0.0degree Cとする。
 	theta_dsh_srf_t_js_ms_n0 := mat.NewDense(n_grounds, 12, nil)
 
 	// ステップnの境界jにおける表面熱流（壁体吸熱を正とする）, W/m2, [j, 1]

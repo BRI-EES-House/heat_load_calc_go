@@ -43,6 +43,7 @@ func BoundaryFromString(str string) (BoundaryType, error) {
 	}
 }
 
+// 境界
 type Boundary struct {
 
 	// ID
@@ -88,19 +89,19 @@ type Boundary struct {
 	// 室内側表面放射熱伝達率, W/m2K
 	h_s_r float64
 
-	// 相当外気温度, ℃, [8760 * 4]
+	// ステップ n における相当外気温度, degree C, [N+1]
 	theta_o_sol *mat.VecDense
 
-	// 透過日射熱取得, W, [8760*4]
+	// ステップ n における透過日射熱取得, W, [N+1]
 	q_trs_sol []float64
 
 	// 応答係数データクラス
 	rf *ResponseFactor
 
-	// 裏面温度に他の境界 j の等価室温が与える影響, [j, j]
+	// 裏面温度に他の境界 j の等価室温が与える影響, [J]
 	k_ei_js_j []float64
 
-	// 裏面温度に室 i の室温が与える影響, [i]
+	// 裏面温度に室 i の室温が与える影響, [I]
 	k_s_r_j_is []float64
 
 	// 計算で使用する熱貫流率, W/m2K
@@ -108,33 +109,31 @@ type Boundary struct {
 }
 
 type Boundaries struct {
-	bss                   []*Boundary   // 境界
-	p_is_js               *mat.Dense    // 室iと境界jの関係を表す係数（境界jから室iへの変換）, [i, j]
-	q_trs_sol_is_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [i, n]
-	n_b                   int           // 境界の数
+	bss                   []*Boundary   // 境界 [J]
+	n_b                   int           // 境界の数 J
 	n_ground              int           // 地盤の数
 	id_bs_js              []int         // ID
-	name_js               []string      // 名前, [j, 1]
-	sub_name_js           []string      // 名前2, [j, 1]
-	p_is_is               *mat.Dense    // 室iと境界jの関係を表す係数（境界jから室iへの変換）
-	p_js_is               *mat.Dense    // 室iと境界jの関係を表す係数（室iから境界jへの変換）
-	is_floor_js           []bool        // 床かどうか, [j, 1]
-	is_ground_js          []bool        // 地盤かどうか, [j, 1]
-	k_ei_js_js            *mat.Dense    // 境界jの裏面温度に他の境界の等価室温が与える影響, [j, j]
-	k_eo_js               *mat.VecDense // 温度差係数
-	k_s_r_js              *mat.Dense    // 境界 j の裏面温度に室温が与える影響, [j, i]
-	p_s_sol_abs_js        *mat.VecDense // 境界jの日射吸収の有無, [j, 1]
-	h_s_r_js              *mat.VecDense // 境界jの室内側表面放射熱伝達率, W/m2K, [j, 1]
-	h_s_c_js              *mat.VecDense // 境界jの室内側表面対流熱伝達率, W/m2K, [j, 1]
-	simulation_u_value_js *mat.VecDense // 境界jの計算で使用する熱貫流率, W/m2K, [j, 1]
-	a_s_js                *mat.VecDense // 境界jの面積, m2, [j, 1]
-	phi_a0_js             *mat.VecDense // 境界jの吸熱応答係数の初項, m2K/W, [j, 1]
-	phi_a1_js_ms          *mat.Dense    // 境界jの項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [j, 12]
-	phi_t0_js             *mat.VecDense // 境界jの貫流応答係数の初項, [j, 1]
-	phi_t1_js_ms          *mat.Dense    // 境界jの項別公比法における項mの貫流応答係数の第一項, [j, 12]
-	r_js_ms               *mat.Dense    // 境界jの項別公比法における項mの公比, [j, 12]
-	theta_o_eqv_js_ns     *mat.Dense    // ステップ n の境界 j における相当外気温度, ℃, [j, n+1]
-	q_trs_sol_js_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	name_js               []string      // 名前, [J]
+	sub_name_js           []string      // 名前2, [J]
+	p_is_js               *mat.Dense    // 室 i と境界 j の関係を表す係数（境界 j から室 i への変換）, -, [I, J]
+	p_js_is               *mat.Dense    // 室 i と境界 j の関係を表す係数（室 i から境界 j への変換）, -, [J, I]
+	is_floor_js           []bool        // 床かどうか, [J]
+	is_ground_js          []bool        // 地盤かどうか, [J]
+	k_ei_js_js            *mat.Dense    // 境界jの裏面温度に他の境界の等価室温が与える影響, [J, J]
+	k_eo_js               *mat.VecDense // 温度差係数, -, [J]
+	k_s_r_js              *mat.Dense    // 境界 j の裏面温度に室温が与える影響, -, [J, I]
+	p_s_sol_abs_js        *mat.VecDense // 境界 j の日射吸収の有無, -, [J]
+	h_s_r_js              *mat.VecDense // 境界 j の室内側表面放射熱伝達率, W/m2K, [J]
+	h_s_c_js              *mat.VecDense // 境界 j の室内側表面対流熱伝達率, W/m2K, [J]
+	simulation_u_value_js *mat.VecDense // 境界 j の計算で使用する熱貫流率, W/m2K, [J]
+	a_s_js                *mat.VecDense // 境界 j の面積, m2, [J]
+	phi_a0_js             *mat.VecDense // 境界 j の吸熱応答係数の初項, m2K/W, [J]
+	phi_a1_js_ms          *mat.Dense    // 境界 j の項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [J, 12]
+	phi_t0_js             *mat.VecDense // 境界 j の貫流応答係数の初項, -, [J]
+	phi_t1_js_ms          *mat.Dense    // 境界 j の項別公比法における項mの貫流応答係数の第一項, -, [J, 12]
+	r_js_ms               *mat.Dense    // 境界 j の項別公比法における項mの公比, -, [J, 12]
+	theta_o_eqv_js_ns     *mat.Dense    // ステップ n の境界 j における相当外気温度, degree C, [J, N+1] (事前計算で求める)
+	q_trs_sol_is_ns       *mat.Dense    // ステップ n の室 i における窓の透過日射熱取得, W, [I, N+1] (事前計算で求める)
 }
 
 /*
@@ -164,14 +163,14 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 		_areas.SetVec(j, b.Area)
 		_connected_room_ids[j] = int(b.ConnectedRoomId)
 
-		// 境界jの室内側表面対流熱伝達率, W/m2K, [J, 1]
+		// 境界 j の室内側表面対流熱伝達率, W/m2K, [J]
 		h_c_js[j] = b.H_c
 	}
 
-	// 境界jの室内側表面放射熱伝達率, W/m2K, [J, 1]
+	// 境界 j の室内側表面放射熱伝達率, W/m2K, [J]
 	h_s_r_js := get_h_s_r_js(id_rm_is, _areas, _connected_room_ids)
 
-	// 室の数
+	// 室の数 I
 	n_rm := len(id_rm_is)
 
 	// 境界 j, [J]
@@ -182,10 +181,10 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 		bss[j] = _get_boundary(b, h_c_js, h_s_r_js, w, n_rm)
 	}
 
-	// 室iと境界jの関係を表す係数（境界jから室iへの変換）, [i, j]
+	// 室 i と境界 j の関係を表す係数（境界 j から室 i への変換）, [I, J]
 	p_is_js := _get_p_is_js(n_rm, bss)
 
-	// ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	// ステップ n の室 i における窓の透過日射熱取得, W, [I, N+1]
 	q_trs_sol_is_ns := get_q_trs_sol_is_ns(n_rm, bss)
 
 	bs := &Boundaries{
@@ -195,7 +194,7 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	}
 	self := bs
 
-	// 境界の数
+	// 境界の数 J
 	bs.n_b = len(bs.bss)
 
 	// 地盤の数
@@ -214,43 +213,43 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	}
 	bs.id_bs_js = ids
 
-	// 名前, [j, 1]
+	// 名前, [J]
 	names := make([]string, len(self.bss))
 	for i, bs := range self.bss {
 		names[i] = bs.name
 	}
 	bs.name_js = names
 
-	// 名前2, [j, 1]
+	// 名前2, [J]
 	sub_names := make([]string, len(self.bss))
 	for i, bs := range self.bss {
 		sub_names[i] = bs.sub_name
 	}
 	bs.sub_name_js = sub_names
 
-	// 室iと境界jの関係を表す係数（境界jから室iへの変換）
+	// 室 i と境界 j の関係を表す係数（境界 j から室 i への変換）
 	bs.p_is_js = p_is_js
 
-	// 室iと境界jの関係を表す係数（室iから境界jへの変換）
+	// 室 i と境界 j の関係を表す係数（室 i から境界 j への変換）
 	var p_js_is mat.Dense
 	p_js_is.CloneFrom(p_is_js.T()) // 単純にT()を使うと、パフォーマンス上の問題があるのでDense型にする
 	bs.p_js_is = &p_js_is
 
-	// 床かどうか, [j, 1]
+	// 床かどうか, [J]
 	is_floor_js := make([]bool, len(self.bss))
 	for i, bs := range self.bss {
 		is_floor_js[i] = bs.is_floor
 	}
 	bs.is_floor_js = is_floor_js
 
-	// 地盤かどうか, [j, 1]
+	// 地盤かどうか, [J]
 	is_grounds := make([]bool, len(self.bss))
 	for i, bs := range self.bss {
 		is_grounds[i] = (bs.boundary_type == BoundaryTypeGround)
 	}
 	bs.is_ground_js = is_grounds
 
-	// 境界jの裏面温度に他の境界の等価室温が与える影響, [j, j]
+	// 境界jの裏面温度に他の境界の等価室温が与える影響, -, [J, J]
 	n := len(self.bss[0].k_ei_js_j)
 	k_ei_js_j := mat.NewDense(self.n_b, n, nil)
 	for i, bs := range self.bss {
@@ -258,22 +257,22 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	}
 	bs.k_ei_js_js = k_ei_js_j
 
-	// 温度差係数
+	// 温度差係数, -, [J]
 	h_td := make([]float64, len(self.bss))
 	for i, bs := range self.bss {
 		h_td[i] = bs.h_td
 	}
 	bs.k_eo_js = mat.NewVecDense(len(h_td), h_td)
 
-	// 境界 j の裏面温度に室温が与える影響, [j, i]
+	// 境界 j の裏面温度に室温が与える影響, -, [J, I]
 	k_s_r_j_is := mat.NewDense(self.n_b, len(self.bss[0].k_s_r_j_is), nil)
 	for i, bs := range self.bss {
 		k_s_r_j_is.SetRow(i, bs.k_s_r_j_is)
 	}
 	bs.k_s_r_js = k_s_r_j_is
 
-	// 境界jの日射吸収の有無, [j, 1]
-	is_solar_absorbed_inside := make([]float64, len(self.bss))
+	// 境界jの日射吸収の有無, -, [J]
+	is_solar_absorbed_inside := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		if bs.is_solar_absorbed_inside {
 			is_solar_absorbed_inside[i] = 1.0
@@ -283,77 +282,77 @@ func NewBoundaries(id_rm_is []int, bs_list []BoudaryJson, w *Weather) *Boundarie
 	}
 	bs.p_s_sol_abs_js = mat.NewVecDense(len(is_solar_absorbed_inside), is_solar_absorbed_inside)
 
-	// 境界jの室内側表面放射熱伝達率, W/m2K, [j, 1]
-	h_s_r := make([]float64, len(self.bss))
+	// 境界 j の室内側表面放射熱伝達率, W/m2K, [J]
+	h_s_r := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		h_s_r[i] = bs.h_s_r
 	}
 	bs.h_s_r_js = mat.NewVecDense(len(h_s_r), h_s_r)
 
-	// 境界jの室内側表面対流熱伝達率, W/m2K, [j, 1]
-	h_s_c := make([]float64, len(self.bss))
+	// 境界 j の室内側表面対流熱伝達率, W/m2K, [J]
+	h_s_c := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		h_s_c[i] = bs.h_s_c
 	}
 	bs.h_s_c_js = mat.NewVecDense(len(h_s_c), h_s_c)
 
-	// 境界jの室内側表面対流熱伝達率, W/m2K, [j, 1]
-	u := make([]float64, len(self.bss))
+	// 境界 j の室内側表面対流熱伝達率, W/m2K, [J]
+	u := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		u[i] = bs.simulation_u_value
 	}
 	bs.simulation_u_value_js = mat.NewVecDense(len(u), u)
 
-	// 境界jの面積, m2, [j, 1]
-	area := make([]float64, len(self.bss))
+	// 境界 j の面積, m2, [J]
+	area := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		area[i] = bs.area
 	}
 	bs.a_s_js = mat.NewVecDense(len(area), area)
 
-	// 境界jの吸熱応答係数の初項, m2K/W, [j, 1]
-	rfa0 := make([]float64, len(self.bss))
+	// 境界 j の吸熱応答係数の初項, m2K/W, [J]
+	rfa0 := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		rfa0[i] = bs.rf.rfa0
 	}
 	bs.phi_a0_js = mat.NewVecDense(len(rfa0), rfa0)
 
-	// 境界jの項別公比法における項mの吸熱応答係数の第一項 , m2K/W, [j, 12]
+	// 境界 j の項別公比法における項mの吸熱応答係数の第一項, m2K/W, [J, 12]
 	rfa1 := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
 		rfa1.SetRow(i, self.bss[i].rf.rfa1)
 	}
 	bs.phi_a1_js_ms = rfa1
 
-	// 境界jの貫流応答係数の初項, [j, 1]
-	rft0 := make([]float64, len(self.bss))
+	// 境界 j の貫流応答係数の初項, -, [J]
+	rft0 := make([]float64, self.n_b)
 	for i, bs := range self.bss {
 		rft0[i] = bs.rf.rft0
 	}
 	bs.phi_t0_js = mat.NewVecDense(len(rft0), rft0)
 
-	// 境界jの項別公比法における項mの貫流応答係数の第一項, [j, 12]
+	// 境界 j の項別公比法における項mの貫流応答係数の第一項, -, [J, 12]
 	rft1 := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
 		rft1.SetRow(i, self.bss[i].rf.rft1)
 	}
 	bs.phi_t1_js_ms = rft1
 
-	// 境界jの項別公比法における項mの公比, [j, 12]
+	// 境界 j の項別公比法における項mの公比, -, [J, 12]
 	row := mat.NewDense(self.n_b, 12, nil)
 	for i := 0; i < self.n_b; i++ {
 		row.SetRow(i, self.bss[i].rf.row)
 	}
 	bs.r_js_ms = row
 
-	// ステップ n の境界 j における相当外気温度, ℃, [j, n+1]
+	// ステップ n の境界 j における相当外気温度, degree C, [J, N+1]
 	theta := mat.NewDense(self.n_b, self.bss[0].theta_o_sol.Len(), nil)
 	for i := 0; i < self.n_b; i++ {
 		theta.SetRow(i, self.bss[i].theta_o_sol.RawVector().Data)
 	}
 	bs.theta_o_eqv_js_ns = theta
 
-	// ステップ n の室 i における窓の透過日射熱取得, W, [n]
+	// ステップ n の室 i における窓の透過日射熱取得, W, [N+1]
 	bs.q_trs_sol_is_ns = q_trs_sol_is_ns
 
 	return bs
@@ -466,10 +465,10 @@ func _get_boundary(
 
 	if boundary_type == BoundaryTypeInternal {
 
-		// 相当外気温度, ℃
+		// 相当外気温度, degree C
 		theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_internal(w)
 
-		// 透過日射量, W, [N+1]
+		// ステップ n における境界 j の透過日射量, W, [N+1]
 		q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 
 		layers := b.Layers
@@ -511,18 +510,18 @@ func _get_boundary(
 
 			eps_r_o_j := _read_eps_r_o_j(b, boundary_id)
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_general_part_and_external_opaque_part(
 				drct_j, a_s_j, eps_r_o_j, r_s_o_j, ssp_j, w,
 			)
 
 		} else {
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_not_sun_striked(w)
 		}
 
-		// 透過日射量, W, [N+1]
+		// ステップ n における境界 j の透過日射量, W, [N+1]
 		q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 
 		layers := b.Layers
@@ -581,22 +580,22 @@ func _get_boundary(
 
 			eps_r_o_j := _read_eps_r_o_j(b, boundary_id)
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_transparent_part(
 				drct_j, eps_r_o_j, r_s_o_j, u_value_j, ssp_j, wdw_j, w,
 			)
 
-			// 透過日射量, W, [N+1]
+			// ステップ n における境界 j の透過日射量, W, [N+1]
 			q_trs_sol = get_q_trs_sol_j_ns_for_transparent_sun_striked(
 				drct_j, area, ssp_j, wdw_j, w,
 			)
 
 		} else {
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_not_sun_striked(w)
 
-			// 透過日射量, W, [N+1]
+			// ステップ n における境界 j の透過日射量, W, [N+1]
 			q_trs_sol = get_q_trs_sol_j_ns_for_not(w)
 		}
 
@@ -627,14 +626,14 @@ func _get_boundary(
 
 			eps_r_o_j := _read_eps_r_o_j(b, boundary_id)
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_general_part_and_external_opaque_part(
 				drct_j, a_s_j, eps_r_o_j, r_s_o_j, ssp_j, w,
 			)
 
 		} else {
 
-			// 相当外気温度, ℃
+			// 相当外気温度, degree C
 			theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_external_not_sun_striked(w)
 
 		}
@@ -654,7 +653,7 @@ func _get_boundary(
 
 	} else if boundary_type == BoundaryTypeGround {
 
-		// 相当外気温度, ℃
+		// 相当外気温度, degree C
 		theta_o_eqv_j_ns = get_theta_o_eqv_j_ns_for_ground(w)
 
 		// 透過日射量, W, [N+1]

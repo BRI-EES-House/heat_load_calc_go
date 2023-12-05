@@ -130,7 +130,7 @@ func sum(arr []float64) float64 {
 */
 func _get_h_s_r_i_js(f_i_js []float64) []float64 {
 
-	// 境界間の放射熱伝達率を決定する際、平均放射温度を20℃固定値であるとして計算する。
+	// 境界間の放射熱伝達率を決定する際、平均放射温度を20degree C固定値であるとして計算する。
 	const theta_mrt_K3 = (20.0 + 273.15) * (20.0 + 273.15) * (20.0 + 273.15)
 
 	h_s_r_i_js := make([]float64, len(f_i_js))

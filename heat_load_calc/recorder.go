@@ -287,7 +287,7 @@ func (r *Recorder) pre_recording(
 
 	// ---瞬時値---
 
-	// ステップ n における外気温度, ℃, [n+1]
+	// ステップ n における外気温度, degree C, [n+1]
 	copy(r.theta_o_ns, weather.theta_o_ns_plus[0:r._n_step_i])
 
 	// ステップ n における外気絶対湿度, kg/kg(DA), [n+1]

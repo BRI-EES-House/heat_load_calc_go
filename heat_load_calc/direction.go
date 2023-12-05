@@ -4,6 +4,7 @@ import (
 	"math"
 )
 
+// 方位
 type Direction string
 
 const (

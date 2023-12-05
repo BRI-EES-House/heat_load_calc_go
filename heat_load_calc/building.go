@@ -164,16 +164,16 @@ func _estimate_c_value(uaValue float64, structure Structure) float64 {
 var __v_leak_is_n mat.VecDense
 
 /*
-	室iのすきま風量を求める。
+	室 i のすきま風量を求める。
 
 	Args:
 
-		theta_r_is_n: ステップnにおける室iの温度, degree C, [i,1]
-		theta_o_n: ステップnにおける外気温, degree C
-		v_rm_is: 室iの容積, m3, [i,1]
+		theta_r_is_n: ステップ n における室 i の温度, degree C, [I]
+		theta_o_n: ステップ n における外気温, degree C
+		v_rm_is: 室 i の容積, m3, [I]
 
 	Returns:
-		ステップnにおける室iのすきま風量, m3/s, [i,1]
+		ステップ n における室 i のすきま風量, m3/s, [I]
 
 	Notes:
 		式(2)

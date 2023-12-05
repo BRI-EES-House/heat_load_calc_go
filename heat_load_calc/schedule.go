@@ -34,23 +34,23 @@ func (n NumberOfOccupants) String() string {
 }
 
 type Schedule struct {
-	q_gen_is_ns            *ScheduleData // ステップ　n　の室　i　における内部発熱, W, [i, n]
-	x_gen_is_ns            *ScheduleData // ステップ　n　の室　i　における人体発湿を除く内部発湿, kg/s, [i, n]
-	v_mec_vent_local_is_ns *ScheduleData // ステップ　n　の室　i　における局所換気量, m3/s, [i, n]
-	n_hum_is_ns            *ScheduleData // ステップ　n　の室　i　における在室人数, [i, n]
-	ac_demand_is_ns        *ScheduleData // ステップ　n　の室　i　における空調需要, [i, n]
-	ac_setting_is_ns       *ScheduleData // ステップ n の室 i における空調モード, [i, n]
+	q_gen_is_ns            *ScheduleData // ステップ　n　の室　i　における内部発熱, W, [I, N]
+	x_gen_is_ns            *ScheduleData // ステップ　n　の室　i　における人体発湿を除く内部発湿, kg/s, [I, N]
+	v_mec_vent_local_is_ns *ScheduleData // ステップ　n　の室　i　における局所換気量, m3/s, [I, N]
+	n_hum_is_ns            *ScheduleData // ステップ　n　の室　i　における在室人数, [I, N]
+	ac_demand_is_ns        *ScheduleData // ステップ　n　の室　i　における空調需要, [I, N]
+	ac_setting_is_ns       *ScheduleData // ステップ n の室 i における空調モード, [I, N]
 }
 
 /*
-Args:
-
-	q_gen_is_ns: ステップ　n　の室　i　における内部発熱, W, [i, n]
-	x_gen_is_ns: ステップ　n　の室　i　における人体発湿を除く内部発湿, kg/s, [i, n]
-	v_mec_vent_local_is_ns: ステップ　n　の室　i　における局所換気量, m3/s, [i, n]
-	n_hum_is_ns: ステップ　n　の室　i　における在室人数, [i, n]
-	ac_demand_is_ns: ステップ　n　の室　i　における空調需要, [i, n]
-	ac_setting_is_ns: ステップ n の室 i における空調モード, [i, n]
+	スケジュールの初期化を行います。
+	Args:
+		q_gen_is_ns: ステップ　n　の室　i　における内部発熱, W, [I, N]
+		x_gen_is_ns: ステップ　n　の室　i　における人体発湿を除く内部発湿, kg/s, [I, N]
+		v_mec_vent_local_is_ns: ステップ　n　の室　i　における局所換気量, m3/s, [I, N]
+		n_hum_is_ns: ステップ　n　の室　i　における在室人数, [I, N]
+		ac_demand_is_ns: ステップ　n　の室　i　における空調需要, [I, N]
+		ac_setting_is_ns: ステップ n の室 i における空調モード, [I, N]
 */
 func NewSchedule(
 	q_gen_is_ns *ScheduleData,
