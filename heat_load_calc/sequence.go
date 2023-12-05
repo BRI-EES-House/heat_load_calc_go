@@ -1088,13 +1088,14 @@ func get_f_h_wgt_is_is_n(
 		__f_h_wgt_is_is_n__result1 = mat.NewDense(l, l, nil)
 	}
 	result1 := __f_h_wgt_is_is_n__result1
+	result1.Zero()
 	for i := 0; i < temp1.Len(); i++ {
 		result1.Set(i, i, temp1.AtVec(i))
 	}
 
-	result1.Apply(func(i, j int, v float64) float64 {
-		return v - rho_a*v_vent_int_is_is_n.At(i, j)
-	}, result1)
+	var temp4 mat.Dense
+	temp4.Scale(rho_a, v_vent_int_is_is_n)
+	result1.Sub(result1, &temp4)
 
 	temp5.Scale(rho_a, NewDiagAsDenseFromFloat64(v_vent_ntr_is))
 	result2.Add(result1, temp5)
