@@ -1850,6 +1850,7 @@ func get_f_flr_js_is_n(
 	}
 
 	result := __f_flr_js_is_n
+	result.Zero()
 	for i := 0; i < r; i++ {
 		for j := 0; j < c; j++ {
 			if operation_mode_is_n[j] == HEATING {
@@ -2226,6 +2227,7 @@ func get_f_brm_is_is_n_pls(
 
 func Diag(dst *mat.Dense, src *mat.VecDense) {
 	n := src.Len()
+	dst.Zero()
 	for i := 0; i < n; i++ {
 		dst.Set(i, i, src.AtVec(i))
 	}
@@ -2233,6 +2235,7 @@ func Diag(dst *mat.Dense, src *mat.VecDense) {
 
 func DiagFromFloat64(dst *mat.Dense, src []float64) {
 	n := len(src)
+	dst.Zero()
 	for i := 0; i < n; i++ {
 		dst.Set(i, i, src[i])
 	}
