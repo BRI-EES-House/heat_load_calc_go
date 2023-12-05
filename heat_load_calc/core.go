@@ -56,10 +56,8 @@ func calc(
 	log.Println("助走計算（土壌のみ）")
 	N := scd.ac_demand_is_ns.Len()
 
-	nn := N - n_step_run_up_build
 	for n := -n_step_run_up; n < -n_step_run_up_build; n++ {
-		gc_n = sqc.run_tick_ground(gc_n, n, nn)
-		nn++
+		gc_n = sqc.run_tick_ground(gc_n, n, N)
 	}
 
 	result := NewRecorder(n_step_main, sqc.rms.id_rm_is, sqc.bs.id_bs_js, itv)

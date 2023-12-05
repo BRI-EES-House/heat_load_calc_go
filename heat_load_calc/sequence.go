@@ -178,11 +178,11 @@ func (s *Sequence) run_tick(n int, N int, c_n *Conditions, recorder *Recorder) *
 	return _run_tick(s, n, N, delta_t, ss, c_n, recorder)
 }
 
-func (s *Sequence) run_tick_ground(gc_n *GroundConditions, n int, nn int) *GroundConditions {
+func (s *Sequence) run_tick_ground(gc_n *GroundConditions, n int, N int) *GroundConditions {
 
 	pp := s.pre_calc_parameters
 
-	return _run_tick_ground(s, pp, gc_n, n, nn)
+	return _run_tick_ground(s, pp, gc_n, n, N)
 }
 
 // ----------------------------------------------------------------------------------
@@ -777,9 +777,21 @@ var __h_i_js *mat.VecDense
 var __ground_idx []int
 
 // 地盤の計算（n+1ステップを計算する）
-func _run_tick_ground(self *Sequence, pp *PreCalcParameters, gc_n *GroundConditions, n int, nn int) *GroundConditions {
+func _run_tick_ground(self *Sequence, pp *PreCalcParameters, gc_n *GroundConditions, n int, N int) *GroundConditions {
 	if gc_n == nil {
 		return nil
+	}
+
+	nn_a := n // 全ステップ数N(平均値)用
+	nn_i := n // 全ステップ数N+1(瞬時値)用
+	if n < 0 {
+		// nは負の値を取ることがあるので調整する
+		nn_a += N
+		nn_i += N + 1
+	}
+	nn_pls := nn_i + 1
+	if nn_pls >= N+1 {
+		nn_pls -= N + 1
 	}
 
 	if __ground_idx == nil {
@@ -836,7 +848,7 @@ func _run_tick_ground(self *Sequence, pp *PreCalcParameters, gc_n *GroundConditi
 		gidx := ground_idx[j]
 		for i := 0; i < 12; i++ {
 			theta_dsh_srf_t_js_ms_npls.Set(j, i,
-				self.bs.phi_t1_js_ms.At(gidx, i)*self.bs.k_eo_js.AtVec(gidx)*self.bs.theta_o_eqv_js_ns.At(gidx, nn)+
+				self.bs.phi_t1_js_ms.At(gidx, i)*self.bs.k_eo_js.AtVec(gidx)*self.bs.theta_o_eqv_js_ns.At(gidx, nn_i)+
 					self.bs.r_js_ms.At(gidx, i)*gc_n.theta_dsh_srf_t_js_ms_n.At(j, i))
 		}
 	}
@@ -848,14 +860,14 @@ func _run_tick_ground(self *Sequence, pp *PreCalcParameters, gc_n *GroundConditi
 
 		gidx := ground_idx[j]
 		theta_s_js_npls[j] =
-			(self.bs.phi_a0_js.AtVec(gidx)*h_i_js.AtVec(j)*self.weather.theta_o_ns_plus[nn+1] +
-				self.bs.phi_t0_js.AtVec(gidx)*self.bs.k_eo_js.AtVec(gidx)*self.bs.theta_o_eqv_js_ns.At(gidx, nn+1) +
+			(self.bs.phi_a0_js.AtVec(gidx)*h_i_js.AtVec(j)*self.weather.theta_o_ns_plus[nn_pls] +
+				self.bs.phi_t0_js.AtVec(gidx)*self.bs.k_eo_js.AtVec(gidx)*self.bs.theta_o_eqv_js_ns.At(gidx, nn_pls) +
 				sum_a + sum_t) / (1.0 + self.bs.phi_a0_js.AtVec(gidx)*h_i_js.AtVec(j))
 	}
 
 	q_srf_js_n := make([]float64, len(ground_idx))
 	for j := 0; j < len(ground_idx); j++ {
-		q_srf_js_n[j] = h_i_js.AtVec(j) * (self.weather.theta_o_ns_plus[nn+1] - theta_s_js_npls[j])
+		q_srf_js_n[j] = h_i_js.AtVec(j) * (self.weather.theta_o_ns_plus[nn_pls] - theta_s_js_npls[j])
 	}
 
 	return &GroundConditions{
