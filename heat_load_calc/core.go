@@ -35,7 +35,7 @@ func calc(
 	n_d_run_up int,
 	n_d_run_up_build int,
 	recording bool,
-) (string, string, *Boundaries) {
+) (*Recorder, *Boundaries) {
 	log.Printf("計算開始")
 
 	// 本計算のステップ数
@@ -102,12 +102,5 @@ func calc(
 		result.post_recording(sqc.rms, sqc.bs, pp.f_mrt_is_js, sqc.es)
 	}
 
-	// dd: data detail, 15分間隔のすべてのパラメータ pd.DataFrame
-	if recording {
-		log.Println("ログ作成")
-		dd_a, dd_i := result.export_pd()
-		return dd_a, dd_i, sqc.bs
-	}
-
-	return "", "", sqc.bs
+	return result, sqc.bs
 }

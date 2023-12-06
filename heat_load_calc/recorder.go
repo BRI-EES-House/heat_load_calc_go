@@ -2,6 +2,7 @@ package heat_load_calc
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -529,14 +530,10 @@ func (self *Recorder) recording(
 	}
 }
 
-func (r *Recorder) export_pd() (string, string) {
-	var sb_a, sb_i strings.Builder
-
+func (r *Recorder) export_a(w_a io.Writer) {
 	// Header
-	sb_a.WriteString(strings.Join(r.get_header_a(), ","))
-	sb_i.WriteString(strings.Join(r.get_header_i(), ","))
-	sb_a.WriteString("\n")
-	sb_i.WriteString("\n")
+	fmt.Fprint(w_a, strings.Join(r.get_header_a(), ","))
+	fmt.Fprint(w_a, "\n")
 
 	// 開始日時と終了日時、インターバル
 	start, end, freq := r._get_date_index()
@@ -551,19 +548,15 @@ func (r *Recorder) export_pd() (string, string) {
 		next := current.Add(time.Duration(freq * float64(time.Minute)))
 
 		// インデックス
-		sb_a.WriteString(fmt.Sprintf("%s,%s",
+		fmt.Fprintf(w_a, "%s,%s",
 			current.Format("2006-01-02 15:04:05"),
 			next.Format("2006-01-02 15:04:05"),
-		))
-		sb_i.WriteString(current.Format("2006-01-02 15:04:05"))
-
-		// 外気温等
-		sb_i.WriteString(fmt.Sprintf(",%g,%g", r.theta_o_ns[n], r.x_o_ns[n]))
+		)
 
 		// 室
 		for i := range r._id_rm_is {
 			// 概要
-			sb_a.WriteString(fmt.Sprintf(",OperationMode.%s,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
+			fmt.Fprintf(w_a, ",OperationMode.%s,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
 				r.operation_mode_is_ns[i][n],
 				r.ac_demand_is_ns[i][n],
 				r.h_hum_c_is_ns[i][n],
@@ -581,10 +574,43 @@ func (r *Recorder) export_pd() (string, string) {
 				r.v_ntrl_is_ns[i][n],
 				r.v_hum_is_ns[i][n],
 				r.clo_is_ns[i][n],
-			))
+			)
+		}
 
+		fmt.Fprint(w_a, "\n")
+
+		current = next
+		n++
+	}
+}
+
+func (r *Recorder) export_i(w_i io.Writer) {
+	// Header
+	fmt.Fprint(w_i, strings.Join(r.get_header_i(), ","))
+	fmt.Fprint(w_i, "\n")
+
+	// 開始日時と終了日時、インターバル
+	start, end, freq := r._get_date_index()
+
+	// 現在の日時を開始日時にセット
+	current := start
+
+	// 終了日時に到達するまでループ
+	n := 0
+	for current.Before(end) {
+		// 30分を加算
+		next := current.Add(time.Duration(freq * float64(time.Minute)))
+
+		// インデックス
+		fmt.Fprint(w_i, current.Format("2006-01-02 15:04:05"))
+
+		// 外気温等
+		fmt.Fprintf(w_i, ",%g,%g", r.theta_o_ns[n], r.x_o_ns[n])
+
+		// 室
+		for i := range r._id_rm_is {
 			// 詳細
-			sb_i.WriteString(fmt.Sprintf(",%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
+			fmt.Fprintf(w_i, ",%g,%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
 				r.theta_r_is_ns.At(i, n),
 				r.rh_r_is_ns[i][n],
 				r.x_r_is_ns.At(i, n),
@@ -596,13 +622,13 @@ func (r *Recorder) export_pd() (string, string) {
 				r.x_frt_is_ns.At(i, n),
 				r.pmv_is_ns[i][n],
 				r.ppd_is_ns[i][n],
-			))
+			)
 		}
 
 		// 境界
 		for j := range r._id_bdry_js {
 			// 詳細
-			sb_i.WriteString(fmt.Sprintf(",%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
+			fmt.Fprintf(w_i, ",%g,%g,%g,%g,%g,%g,%g,%g,%g,%g",
 				r.theta_s_js_ns.At(j, n),
 				r.theta_ei_js_ns[j][n],
 				r.theta_rear_js_ns[j][n],
@@ -613,17 +639,14 @@ func (r *Recorder) export_pd() (string, string) {
 				r.q_i_sol_s_ns_js[j][n],
 				r.q_s_js_ns[j][n],
 				r.f_cvl_js_ns[j][n],
-			))
+			)
 		}
 
-		sb_a.WriteString("\n")
-		sb_i.WriteString("\n")
+		fmt.Fprint(w_i, "\n")
 
 		current = next
 		n++
 	}
-
-	return sb_a.String(), sb_i.String()
 }
 
 func (r *Recorder) get_header_i() []string {

@@ -249,7 +249,7 @@ func Run(
 	// ---- 計算 ----
 
 	// 計算
-	dd_a, dd_i, _ := calc(&rd, w, scd, IntervalM15, 4, 365, 365, 183, recording)
+	result, _ := calc(&rd, w, scd, IntervalM15, 4, 365, 365, 183, recording)
 
 	// 気象データの保存
 	if is_weather_saved {
@@ -270,11 +270,21 @@ func Run(
 		// 計算結果（瞬時値）
 		result_detail_i_path := filepath.Join(output_data_dir, "result_detail_i.csv")
 		log.Printf("Save calculation results data (detailed version) to `%s`", result_detail_i_path)
-		ioutil.WriteFile(result_detail_i_path, ([]byte)(dd_i), fs.ModePerm)
+		f_i, err := os.Create(result_detail_i_path)
+		if err != nil {
+			log.Fatalf("Failed to create `%s`", result_detail_i_path)
+		}
+		defer f_i.Close()
+		result.export_i(f_i)
 
 		// 計算結果（平均・積算値）
 		result_detail_a_path := filepath.Join(output_data_dir, "result_detail_a.csv")
 		log.Printf("Save calculation results data (simplified version) to `%s`", result_detail_a_path)
-		ioutil.WriteFile(result_detail_a_path, ([]byte)(dd_a), fs.ModePerm)
+		f_a, err := os.Create(result_detail_a_path)
+		if err != nil {
+			log.Fatalf("Failed to create `%s`", result_detail_a_path)
+		}
+		defer f_a.Close()
+		result.export_a(f_a)
 	}
 }
