@@ -437,7 +437,7 @@ func (r *Recorder) post_recording(rms *Rooms, bs *Boundaries, f_mrt_is_js *mat.D
 			clo_pls[i],
 			v_hum_pls[i],
 			met_is,
-			"convergence",
+			"constant",
 		)
 	}
 
