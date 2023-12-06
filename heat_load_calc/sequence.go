@@ -2445,9 +2445,9 @@ func get_f_wsv_js_n_pls(
 	f_ax_js_js *mat.LU,
 ) *mat.VecDense {
 	// 総じて逆行列を用いた場合のほうが速い
-	//__f_wsv_js_n_pls.MulVec(f_ax_js_js_inv, f_cvl_js_n_pls)
+	__f_wsv_js_n_pls.MulVec(f_ax_js_js_inv, f_cvl_js_n_pls)
 
-	f_ax_js_js.SolveVecTo(&__f_wsv_js_n_pls, false, f_cvl_js_n_pls)
+	//f_ax_js_js.SolveVecTo(&__f_wsv_js_n_pls, false, f_cvl_js_n_pls)
 
 	return &__f_wsv_js_n_pls
 }
