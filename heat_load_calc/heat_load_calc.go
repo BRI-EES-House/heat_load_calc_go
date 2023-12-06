@@ -167,6 +167,7 @@ type EquipmentPropertJson struct {
 	    weather_file_path: 気象データのファイルパス
 	    region: 地域の区分
 		is_weather_saved: 気象データを出力するか否か
+		recording: 記録を行うか
 */
 func Run(
 	house_data_path string,
@@ -176,6 +177,7 @@ func Run(
 	weather_file_path string,
 	region int,
 	is_weather_saved bool,
+	recording bool,
 ) {
 	// interval currently fixed at 15 minutes
 	//itv := 15
@@ -183,14 +185,16 @@ func Run(
 
 	// ---- 事前準備 ----
 
-	// 出力ディレクトリの作成
-	if _, err := os.Stat(output_data_dir); os.IsNotExist(err) {
-		os.Mkdir(output_data_dir, 0755)
-	}
+	if recording {
+		// 出力ディレクトリの作成
+		if _, err := os.Stat(output_data_dir); os.IsNotExist(err) {
+			os.Mkdir(output_data_dir, 0755)
+		}
 
-	_, err := os.Stat(output_data_dir)
-	if os.IsNotExist(err) {
-		log.Fatalf("`%s` is not a directory", output_data_dir)
+		_, err := os.Stat(output_data_dir)
+		if os.IsNotExist(err) {
+			log.Fatalf("`%s` is not a directory", output_data_dir)
+		}
 	}
 
 	// 住宅計算条件JSONファイルの読み込み
@@ -245,7 +249,7 @@ func Run(
 	// ---- 計算 ----
 
 	// 計算
-	dd_a, dd_i, _ := calc(&rd, w, scd, IntervalM15, 4, 365, 365, 183)
+	dd_a, dd_i, _ := calc(&rd, w, scd, IntervalM15, 4, 365, 365, 183, recording)
 
 	// 気象データの保存
 	if is_weather_saved {
@@ -262,13 +266,15 @@ func Run(
 
 	// ---- 計算結果ファイルの保存 ----
 
-	// 計算結果（瞬時値）
-	result_detail_i_path := filepath.Join(output_data_dir, "result_detail_i.csv")
-	log.Printf("Save calculation results data (detailed version) to `%s`", result_detail_i_path)
-	ioutil.WriteFile(result_detail_i_path, ([]byte)(dd_i), fs.ModePerm)
+	if recording {
+		// 計算結果（瞬時値）
+		result_detail_i_path := filepath.Join(output_data_dir, "result_detail_i.csv")
+		log.Printf("Save calculation results data (detailed version) to `%s`", result_detail_i_path)
+		ioutil.WriteFile(result_detail_i_path, ([]byte)(dd_i), fs.ModePerm)
 
-	// 計算結果（平均・積算値）
-	result_detail_a_path := filepath.Join(output_data_dir, "result_detail_a.csv")
-	log.Printf("Save calculation results data (simplified version) to `%s`", result_detail_a_path)
-	ioutil.WriteFile(result_detail_a_path, ([]byte)(dd_a), fs.ModePerm)
+		// 計算結果（平均・積算値）
+		result_detail_a_path := filepath.Join(output_data_dir, "result_detail_a.csv")
+		log.Printf("Save calculation results data (simplified version) to `%s`", result_detail_a_path)
+		ioutil.WriteFile(result_detail_a_path, ([]byte)(dd_a), fs.ModePerm)
+	}
 }

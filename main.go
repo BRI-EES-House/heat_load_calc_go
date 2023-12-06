@@ -15,7 +15,7 @@ func main() {
 	flag.StringVar(&house_data, "i", "", "計算を実行するJSONファイル")
 
 	var output_data_dir string
-	flag.StringVar(&output_data_dir, "o", ".", "出力フォルダ")
+	flag.StringVar(&output_data_dir, "o", "", "出力フォルダ")
 
 	var is_schedule_saved bool
 	flag.BoolVar(&is_schedule_saved, "schedule_saved", false, "スケジュールを出力するか否かを指定します。")
@@ -68,6 +68,7 @@ func main() {
 		weather_path,
 		region,
 		is_weather_saved,
+		output_data_dir != "",
 	)
 
 	elapsedTime := time.Since(start)

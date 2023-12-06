@@ -34,6 +34,7 @@ func calc(
 	n_d_main int,
 	n_d_run_up int,
 	n_d_run_up_build int,
+	recording bool,
 ) (string, string, *Boundaries) {
 	log.Printf("計算開始")
 
@@ -60,9 +61,14 @@ func calc(
 		gc_n = sqc.run_tick_ground(gc_n, n, N)
 	}
 
-	result := NewRecorder(n_step_main, sqc.rms.id_rm_is, sqc.bs.id_bs_js, itv)
+	var result *Recorder = nil
+	if recording {
+		result = NewRecorder(n_step_main, sqc.rms.id_rm_is, sqc.bs.id_bs_js, itv)
+	}
 
-	result.pre_recording(sqc.weather, sqc.scd, sqc.bs, pp.q_sol_frt_is_ns, pp.q_s_sol_js_ns)
+	if result != nil {
+		result.pre_recording(sqc.weather, sqc.scd, sqc.bs, pp.q_sol_frt_is_ns, pp.q_s_sol_js_ns)
+	}
 
 	// 建物を計算するにあたって初期値を与える
 	c_n := initialize_conditions(sqc.rms.n_rm, sqc.bs.n_b)
@@ -92,12 +98,16 @@ func calc(
 	}
 	log.Print("12 / 12 calculated.")
 
-	result.post_recording(sqc.rms, sqc.bs, pp.f_mrt_is_js, sqc.es)
-
-	log.Println("ログ作成")
+	if result != nil {
+		result.post_recording(sqc.rms, sqc.bs, pp.f_mrt_is_js, sqc.es)
+	}
 
 	// dd: data detail, 15分間隔のすべてのパラメータ pd.DataFrame
-	dd_a, dd_i := result.export_pd()
+	if recording {
+		log.Println("ログ作成")
+		dd_a, dd_i := result.export_pd()
+		return dd_a, dd_i, sqc.bs
+	}
 
-	return dd_a, dd_i, sqc.bs
+	return "", "", sqc.bs
 }
