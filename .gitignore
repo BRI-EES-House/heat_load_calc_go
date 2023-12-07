@@ -1,2 +1,4 @@
 heat_load_calc/heat_load_calc
 out/
+test/result_detail_a.csv
+cpu.prof
