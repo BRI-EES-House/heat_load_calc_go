@@ -46,6 +46,9 @@ type PreCalcParameters struct {
 
 	// 室 i の係数 XOT, [I, I] (逆行列,密行列) 式(2.20)
 	f_xot_is_is *mat.Dense
+
+	// p_js_is と f_mrt_is_js の積（事前計算）, [J, J]
+	p_js_is_f_mrt_is_js *mat.Dense
 }
 
 type Sequence struct {
@@ -662,12 +665,12 @@ func _run_tick(self *Sequence, n int, N int, delta_t float64, ss *PreCalcParamet
 	theta_ei_js_n_pls := get_theta_ei_js_n_pls(
 		self.bs.a_s_js,
 		beta_is_n,
-		ss.f_mrt_is_js,
 		f_flr_js_is_n,
 		self.bs.h_s_c_js,
 		self.bs.h_s_r_js,
 		l_rs_is_n,
 		self.bs.p_js_is,
+		ss.p_js_is_f_mrt_is_js,
 		ss.q_s_sol_js_ns.ColView(nn_pls),
 		theta_r_is_n_pls,
 		theta_s_js_n_pls,
@@ -1251,7 +1254,6 @@ func get_q_s_js_n_pls(
 }
 
 var __theta_ei_js_n_pls__temp1 mat.VecDense
-var __theta_ei_js_n_pls__temp2 mat.Dense
 var __theta_ei_js_n_pls__temp3 mat.VecDense
 var __theta_ei_js_n_pls__temp4 mat.VecDense
 var __theta_ei_js_n_pls__temp5 mat.VecDense
@@ -1282,12 +1284,12 @@ var __theta_ei_js_n_pls__temp6 mat.VecDense
 func get_theta_ei_js_n_pls(
 	a_s_js *mat.VecDense,
 	beta_is_n *mat.VecDense,
-	f_mrt_is_js mat.Matrix,
 	f_flr_js_is_n *mat.VecDense,
 	h_s_c_js *mat.VecDense,
 	h_s_r_js *mat.VecDense,
 	l_rs_is_n *mat.VecDense,
 	p_js_is mat.Matrix,
+	p_js_is_f_mrt_is_js mat.Matrix,
 	q_s_sol_js_n_pls mat.Vector,
 	theta_r_is_n_pls *mat.VecDense,
 	theta_s_js_n_pls *mat.VecDense,
@@ -1298,11 +1300,10 @@ func get_theta_ei_js_n_pls(
 	temp1.MulElemVec(h_s_c_js, temp1)
 
 	// Python: h_s_r_js*np.dot(np.dot(p_js_is, f_mrt_is_js), theta_s_js_n_pls)
-	temp2 := &__theta_ei_js_n_pls__temp2
+	// 最適化: p_js_is × f_mrt_is_js は事前計算済み
 	temp3 := &__theta_ei_js_n_pls__temp3
-	temp2.Mul(p_js_is, f_mrt_is_js)       // temp2 <= np.dot(p_js_is, f_mrt_is_js)
-	temp3.MulVec(temp2, theta_s_js_n_pls) // temp3 <= np.dot(temp2, theta_s_js_n_pls)
-	temp3.MulElemVec(h_s_r_js, temp3)     // temp3 <= h_s_r_js * temp3
+	temp3.MulVec(p_js_is_f_mrt_is_js, theta_s_js_n_pls) // temp3 <= np.dot(p_js_is_f_mrt_is_js, theta_s_js_n_pls)
+	temp3.MulElemVec(h_s_r_js, temp3)                   // temp3 <= h_s_r_js * temp3
 
 	// Python: np.dot(f_flr_js_is_n, (1.0-beta_is_n)*l_rs_is_n)/a_s_js
 	temp4 := &__theta_ei_js_n_pls__temp4
@@ -3009,19 +3010,28 @@ func _pre_calc(
 		k_r_is_n,
 	)
 
+	// p_js_is と f_mrt_is_js の積を事前計算（最適化）
+	// get_theta_ei_js_n_pls 内で毎回計算されるのを避ける
+	// p_js_is: [J, I], f_mrt_is_js: [I, J] => 結果: [J, J]
+	jr, _ := bs.p_js_is.Dims()
+	_, jc := f_mrt_is_js.Dims()
+	p_js_is_f_mrt_is_js := mat.NewDense(jr, jc, nil)
+	p_js_is_f_mrt_is_js.Mul(bs.p_js_is, f_mrt_is_js)
+
 	pre_calc_parameters := PreCalcParameters{
-		v_vent_mec_is_ns: v_vent_mec_is_ns,
-		f_mrt_hum_is_js:  f_mrt_hum_is_js,
-		f_mrt_is_js:      f_mrt_is_js,
-		q_s_sol_js_ns:    q_s_sol_js_ns,
-		q_sol_frt_is_ns:  q_sol_frt_is_ns,
-		f_wsr_js_is:      f_wsr_js_is,
-		f_ax_js_js:       f_ax_js_js,
-		f_ax_js_js_inv:   f_ax_js_js_inv,
-		f_wsc_js_ns:      f_wsc_js_ns,
-		k_r_is_n:         k_r_is_n,
-		k_c_is_n:         k_c_is_n,
-		f_xot_is_is:      f_xot_is_is_n_pls,
+		v_vent_mec_is_ns:    v_vent_mec_is_ns,
+		f_mrt_hum_is_js:     f_mrt_hum_is_js,
+		f_mrt_is_js:         f_mrt_is_js,
+		q_s_sol_js_ns:       q_s_sol_js_ns,
+		q_sol_frt_is_ns:     q_sol_frt_is_ns,
+		f_wsr_js_is:         f_wsr_js_is,
+		f_ax_js_js:          f_ax_js_js,
+		f_ax_js_js_inv:      f_ax_js_js_inv,
+		f_wsc_js_ns:         f_wsc_js_ns,
+		k_r_is_n:            k_r_is_n,
+		k_c_is_n:            k_c_is_n,
+		f_xot_is_is:         f_xot_is_is_n_pls,
+		p_js_is_f_mrt_is_js: p_js_is_f_mrt_is_js,
 	}
 
 	return &pre_calc_parameters
