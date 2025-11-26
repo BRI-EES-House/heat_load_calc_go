@@ -62,6 +62,9 @@ The memory of matrices generated as local variables in run_tick is always alloca
 ### Skip zero matrix calculation
 Frequent or constant zero matrices appear depending on the schedule and settings, such as air conditioning operation. Since it is obvious that the inner product with the zero matrix is zero, the related operations are skipped.
 
+### Gauss-Seidel method
+For solving the system of linear equations at each time step, the Gauss-Seidel iterative method is used. Since the solution from the previous time step provides a good initial guess, the method converges quickly with few iterations.
+
 ### BLAS
 Gonum seems to be aware of the speedup that can be achieved by using BLAS, but it did not run fast when bound to OpenBLAS or IntelMKL. It is thought that it did not benefit from the small matrix size it handles.
 

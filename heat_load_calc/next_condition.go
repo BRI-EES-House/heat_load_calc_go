@@ -1,6 +1,8 @@
 package heat_load_calc
 
 import (
+	"math"
+
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -216,6 +218,8 @@ var __load_and_temp__v mat.VecDense
 var __load_and_temp__theta_rq mat.VecDense
 var __load_and_temp__lc_rq mat.VecDense
 var __load_and_temp__lr_rq mat.VecDense
+var __load_and_temp__prev_v *mat.VecDense
+var __gauss_seidel_use_iterative bool = false // ガウス・ザイデル法を使うかのフラグ（小行列では効果なし）
 
 /*
 Args:
@@ -319,7 +323,26 @@ func get_load_and_temp(
 	x2.AddVec(x2, mat.NewVecDense(len(k), k))
 
 	v := &__load_and_temp__v
-	v.SolveVec(x1, x2)
+
+	if __gauss_seidel_use_iterative && __load_and_temp__prev_v != nil {
+		// ガウス・ザイデル法を使う
+		result, _ := solveGaussSeidel(x1, x2, __load_and_temp__prev_v, 100, 1e-6)
+		if result != nil {
+			v.CopyVec(result)
+		} else {
+			// 失敗した場合は直接法にフォールバック
+			v.SolveVec(x1, x2)
+		}
+	} else {
+		// 直接法を使う（初回のみ）
+		v.SolveVec(x1, x2)
+	}
+
+	// 前回の解を保存
+	if __load_and_temp__prev_v == nil {
+		__load_and_temp__prev_v = mat.NewVecDense(n, nil)
+	}
+	__load_and_temp__prev_v.CopyVec(v)
 
 	// 求めるべき数値
 	// nt, c, r それぞれ、1の場合（値を指定しない場合）は、vで表される値が入る。
@@ -330,6 +353,66 @@ func get_load_and_temp(
 	__combineVectorTo(lr_rq, n, v, lr_set, r)
 
 	return theta_rq, lc_rq, lr_rq
+}
+
+// ガウス・ザイデル法で線形方程式 A*x = b を解く
+// x_init: 初期推定値（前回の解を使う）
+// max_iter: 最大反復回数
+// tol: 収束判定の許容誤差（相対ノルム）
+// 返り値: (解, 反復回数)
+func solveGaussSeidel(A mat.Matrix, b mat.Vector, x_init mat.Vector, max_iter int, tol float64) (*mat.VecDense, int) {
+	n, _ := A.Dims()
+	x := mat.NewVecDense(n, nil)
+	if x_init != nil {
+		x.CopyVec(x_init)
+	}
+
+	x_new := mat.NewVecDense(n, nil)
+
+	for iter := 0; iter < max_iter; iter++ {
+		x_new.CopyVec(x)
+
+		// ガウス・ザイデル法の反復
+		for i := 0; i < n; i++ {
+			sum := 0.0
+			for j := 0; j < n; j++ {
+				if j != i {
+					sum += A.At(i, j) * x_new.AtVec(j)
+				}
+			}
+			aii := A.At(i, i)
+			if math.Abs(aii) < 1e-15 {
+				// 対角要素が0に近い場合は直接法にフォールバック
+				return nil, -1
+			}
+			x_new.SetVec(i, (b.AtVec(i)-sum)/aii)
+		}
+
+		// 収束判定：相対ノルム
+		diff := mat.NewVecDense(n, nil)
+		diff.SubVec(x_new, x)
+		diff_norm := mat.Norm(diff, 2)
+		x_norm := mat.Norm(x_new, 2)
+
+		if x_norm > 1e-10 {
+			rel_err := diff_norm / x_norm
+			if rel_err < tol {
+				x.CopyVec(x_new)
+				return x, iter + 1
+			}
+		} else {
+			// x_normが小さすぎる場合は絶対誤差で判定
+			if diff_norm < tol {
+				x.CopyVec(x_new)
+				return x, iter + 1
+			}
+		}
+
+		x.CopyVec(x_new)
+	}
+
+	// 最大反復回数に達した
+	return x, max_iter
 }
 
 // 長さnのベクトルA, ベクトルBをベクトルrの比率で按分する。rは0-1の値を取り、結果に含まれるAの比率を示す
